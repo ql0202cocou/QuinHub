@@ -40,10 +40,16 @@ Makefile 里已内置 JAVA_HOME / CARGO_TARGET_DIR 默认值。
 4. **cargokit 状态不自愈**：产物在 `app/build/quinhub_bridge/`，排查时整体删掉重来。
 5. 无 sudo：unzip 用 busybox 提供；JDK 用 Temurin 解压版；都在用户目录，不动系统。
 
-## adb 桥接（Windows 模拟器，待做）
+## adb 桥接（Windows 模拟器）— 已配好并验证 ✅
 
-WSL2 里 Flutter 要看到 Windows 模拟器，两条路线任选：
-- 路线 A（推荐）：Windows 侧 `adb.exe -a nodaemon server`（监听所有接口），WSL 侧 `export ADB_SERVER_SOCKET=tcp:<Windows主机IP>:5037`
-- 路线 B：把 `~/Android/Sdk/platform-tools/adb` 换成 shim，转发调用 Windows 的 `adb.exe`（通过 /mnt/c 路径或 `adb.exe` interop），WSL 与 Windows 的 adb 版本需一致（35.x 对 35.x）
+实际生效配置（路线 A）：
+- Windows adb 位置：`/mnt/c/Users/QuinlanHoo/AppData/Local/Android/Sdk/platform-tools/adb.exe`
+- Windows 侧重启 adb 监听所有接口（可在 WSL 里直接执行）：
+  `adb.exe kill-server && adb.exe -a start-server`（重启 Windows 或模拟器后需重跑）
+- WSL 侧：`export ADB_SERVER_SOCKET=tcp:172.31.160.1:5037`（IP 为 `ip route show default` 的网关）
+- 验证：`adb devices` 应列出 `emulator-5554`，`fvm flutter devices` 可见。
 
-配好后 `fvm flutter devices` 应能看到模拟器，然后 `fvm flutter run` 验证 echo 流式界面。
+已验证：`adb install` 安装 debug APK + 启动 + echo 流式联调通过（输入"你好，QuinHub"正确回显，usage/done 事件齐全）。
+
+已知限制：`flutter run` 的 VM Service 连不上（adb forward 落在 Windows 侧的 localhost，WSL 内 127.0.0.1 不通），需要热重载时用路线 B（shim 调 Windows adb.exe，forward 才会回到本机）。日常验证可用 `flutter build apk --debug` + `adb install -r` + `adb shell am start -n com.quinhub.app/.MainActivity`。
+
