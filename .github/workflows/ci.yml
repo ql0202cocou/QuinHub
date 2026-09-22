@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: cargo test
+        run: cd core && cargo test --workspace
+
+  rust-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: fmt + clippy
+        run: cd core && cargo fmt --check && cargo clippy --workspace -- -D warnings
+
+  flutter-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: analyze + test
+        run: cd app && flutter pub get && flutter analyze && flutter test
+
+  # build-android：M1 接入 frb 后启用（需 cargo-ndk + Rust Android targets）
+  # build-android:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
+  #     - uses: subosito/flutter-action@v2
+  #       with:
+  #         channel: stable
+  #     - run: cargo install cargo-ndk
+  #     - run: cd app && flutter pub get && flutter build apk --debug
+
+  # build-ios：M5 前打通（macos runner + xcframework 打包）

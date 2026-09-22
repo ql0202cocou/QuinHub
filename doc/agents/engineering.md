@@ -12,6 +12,8 @@
 - Flutter：fvm 锁定（提交 `.fvmrc`）。
 - Rust：提交 `rust-toolchain.toml`。
 - 依赖：`pubspec.lock`、`Cargo.lock` 均提交入库。
+- **AGP 必须 < 9**（M1 实测）：frb 2.13 的 cargokit 使用 AGP 旧 Variant API（`libraryVariants`，AGP 9 已移除），AGP 9 下 Rust 库能编译但不会打进 APK（症状：APK 里只有 libflutter.so）。当前固定 8.13.0。
+- **Rust crate 包名必须用下划线**（M1 实测）：cargokit 用 Cargo.toml 的 package name 直接拼库文件名，连字符会导致找不到产物（找 `liba-b.so`，实际是 `liba_b.so`），APK 静默缺库。
 
 ## 3. 代码生成物
 - frb 桥接代码（`app/lib/bridge/`）：**提交入库**；CI 重新执行 codegen 并 diff 校验，保证与 Rust 源码一致。

@@ -1,0 +1,9 @@
+[package]
+name = "quinhub-context"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+quinhub-api = { path = "../api" }
+thiserror = { workspace = true }
