@@ -2,6 +2,8 @@
 
 所有文档的唯一索引。修改代码前先读对应文档；修改了文档所描述的行为，必须回写对应文档。
 
+> **项目当前状态**：第一期（对话核心）已完成。盘点与 backlog 见 [agents/2026-09-23-v1-status-and-backlog.md](agents/2026-09-23-v1-status-and-backlog.md)（最新交接文档，优先阅读）。
+
 ## AGENTS 文档
 
 AI 代理首次接触仓库：`plan.md` → `decisions.md` → `engineering.md`，其余按需查阅。

@@ -9,6 +9,10 @@
 - [pages-and-routing.md](./pages-and-routing.md) — 页面清单与路由设计
 - [release-checklist.md](./release-checklist.md) — 发布与合规 checklist
 
+> **状态：第一期已完成（2026-09-23，commits 至 `5a75787`）。**
+> 当前状态盘点与 backlog 见 [2026-09-23-v1-status-and-backlog.md](./2026-09-23-v1-status-and-backlog.md)；
+> 各里程碑交接笔记：`2026-09-23-m1-setup-notes.md` ~ `2026-09-23-m5b-polish-notes.md`。
+
 ## 目标
 做类似 LobeHub 手机版的 AI 聊天应用，iOS + Android 双端。第一期只做「对话」核心；插件、知识库、语音、助手市场等只留架构接口，不开发。本期只做客户端，服务端（账号、云同步）后期单独立项、Docker 部署。
 
@@ -116,19 +120,19 @@ QuinHub/
 - `Assistant`：id, name, avatar, system_prompt, default_model —— 本期仅内置默认助手 + 会话级自定义 system prompt，市场后期接
 - `Settings`：主题(浅/深/跟随系统)、语言(中/英)、默认模型
 
-## 第一期功能范围
-1. **提供商管理**：多个 ProviderProfile 增删改；Key 加密存储；连通性测试（拉取模型列表）。
+## 第一期功能范围（✅ 已完成 / ⚠️ 缺口见 backlog）
+1. **提供商管理**：多个 ProviderProfile 增删改；Key 加密存储；连通性测试（拉取模型列表）。✅
 2. **聊天核心**：
-   - SSE 流式输出，可取消；失败重试；重新生成；编辑重发。
-   - 多会话：新建/重命名/置顶/归档/删除，本地持久化，杀进程恢复。
-   - 会话级模型切换与参数（temperature、top_p、max_tokens、system prompt）。
-   - **图片消息**：拍照/相册选图、压缩、base64 发送（OpenAI `image_url` 与 Anthropic `source` 两种格式适配）；仅对 capabilities 含 vision 的模型开放入口。
-   - Markdown 渲染：代码高亮 + 一键复制、表格、列表；LaTeX 留接口。
-   - Token 用量展示（取响应 usage）。
-   - **上下文管理（Agent 化）**：历史全量存储不丢弃；ContextManager 负责发送时的上下文组装，默认策略 `auto_summary`（接近模型窗口时自动滚动摘要旧消息）；见 decisions.md 决策四。
-3. **导出与分享**：会话导出 Markdown 文件；分享长图（滚动截屏渲染）；均走系统分享面板。
-4. **设置**：主题、语言、默认参数。
-5. **同步预留**：`SyncBackend` 接口 + no-op 实现 + 墓碑/版本字段；方向性约定见 [engineering.md](./engineering.md) 同步一节。
+   - SSE 流式输出，可取消；失败重试；重新生成；编辑重发。✅
+   - 多会话：新建/重命名/置顶/归档/删除，本地持久化，杀进程恢复。✅（⚠️ 归档未做 UI 入口，归档会话无查看处——backlog）
+   - 会话级模型切换与参数（temperature、top_p、max_tokens、system prompt）。⚠️ 只做了模型切换；参数编辑 UI 未做（DB/Rust 读取已就绪）——backlog
+   - **图片消息**：拍照/相册选图、压缩、base64 发送（OpenAI `image_url` 与 Anthropic `source` 两种格式适配）；仅对 capabilities 含 vision 的模型开放入口。✅（⚠️ vision 能力 gating 未做，+ 号始终可用——backlog）
+   - Markdown 渲染：代码高亮 + 一键复制、表格、列表；LaTeX 留接口。✅（LaTeX 未做）
+   - Token 用量展示（取响应 usage）。✅（消息级 + 会话级统计对话框）
+   - **上下文管理（Agent 化）**：历史全量存储不丢弃；ContextManager 负责发送时的上下文组装，默认策略 `auto_summary`（接近模型窗口时自动滚动摘要旧消息）；见 decisions.md 决策四。✅（⚠️ 未用超长真实对话实测触发——backlog 验证项）
+3. **导出与分享**：会话导出 Markdown 文件；分享长图（滚动截屏渲染）；均走系统分享面板。✅（长图实为离屏 RepaintBoundary 渲染）
+4. **设置**：主题、语言、默认参数。⚠️ 主题/语言已做；默认参数（全局默认模型）未做——backlog
+5. **同步预留**：`SyncBackend` 接口 + no-op 实现 + 墓碑/版本字段；方向性约定见 [engineering.md](./engineering.md) 同步一节。✅
 
 明确不做（仅留接口/字段）：插件与工具调用、知识库 RAG、语音、绘图、助手市场、账号登录。
 
@@ -139,12 +143,20 @@ QuinHub/
 - **M4 聊天 UI**：贴近 LobeHub 风格；消息列表（虚拟滚动 + block 级增量渲染、select 细粒度重建）、Markdown（spike 定稿）、输入栏（含图片消息）、会话管理页。
 - **M5 打磨**：导出与分享（Markdown / 长图）、主题/国际化、用量统计、空态错误态、图标启动屏、Release 打包（按 release-checklist.md 逐项落实）。
 
-## 验收标准
-- 真机（Android + iOS 至少各一，iOS 可用模拟器兜底）上两家 API 各跑通 ≥3 轮流式对话，滚动流畅。
-- 图片消息在 vision 模型上双端各跑通一次。
-- 长对话触发 auto_summary 后对话可继续且不报错。
-- 杀进程重进，会话与消息完整恢复。
-- 断网、Key 错误、取消、重试路径均有明确 UI 反馈。
+## 里程碑
+- **M1 脚手架** ✅（模拟器 echo 流式实测通过；iOS 链路仅配置就绪，未真机构建）
+- **M2 存储与设置** ✅（schema + 迁移、Key 加密、Provider 配置页、杀进程持久化实测）
+- **M3 聊天内核** ✅（两家 SSE + 错误归一化 + ContextManager + 取消/重试；25 单测 + 4 mock 集成；真机 401 错误路径实测）
+- **M4 聊天 UI** ✅（会话管理、流式渲染、BlockedMarkdown spike 定稿、mock 全链路实测）
+- **M5 打磨** ✅（导出分享、主题/i18n、用量、图标启动屏、Release APK 跑通；正式签名待用户 keystore）
+
+## 验收标准（实况）
+- ⚠️ 两家 API 各跑通 ≥3 轮流式对话——**mock（OpenAI 协议）全链路 + 真实 OpenAI 401 错误路径已实测；真 Key 成功对话与 Anthropic 真机待用户验收**
+- ⚠️ 图片消息在 vision 模型跑通——Android mock 已测格式与链路，真 vision 模型与 iOS 待验
+- ⚠️ auto_summary 超长对话触发——单测覆盖组装逻辑，真实长对话未触发过
+- ✅ 杀进程重进，会话与消息完整恢复
+- ✅ 断网、Key 错误、取消、重试路径均有明确 UI 反馈（取消按钮未真机单测——backlog）
+- ⚠️ iOS——未构建（无 macOS），走 CI
 
 ## 验证方式
 - Rust：SSE 帧解析、Anthropic↔ChatEvent 映射、ContextManager 组装逻辑单元测试（录制样本回放）。
