@@ -10,6 +10,7 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 [dependencies]
 flutter_rust_bridge = "=2.13.0"
 quinhub-api = { path = "../api" }
+quinhub-context = { path = "../context" }
 quinhub-storage = { path = "../storage" }
 quinhub-crypto = { path = "../crypto" }
 tokio = { workspace = true }

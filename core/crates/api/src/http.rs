@@ -43,6 +43,49 @@ pub fn normalize_base_url(base: &str) -> String {
     base.trim_end_matches('/').to_string()
 }
 
+/// 请求建立阶段的重试（指数退避，最多 2 次）。
+/// 仅 network/interrupted/rate_limit/server 可重试，见 protocol-mapping.md 第 5 节。
+/// 注意：一旦开始流式接收（本函数返回 Ok 后）不再重试，避免重复内容。
+pub async fn send_with_retry<F, Fut>(mut send: F) -> Result<reqwest::Response, ApiError>
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = Result<reqwest::Response, reqwest::Error>>,
+{
+    const MAX_RETRY: u32 = 2;
+    let mut attempt = 0u32;
+    let mut delay = Duration::from_millis(500);
+    loop {
+        match send().await {
+            Ok(resp) => {
+                let status = resp.status().as_u16();
+                // 响应层面的 429/5xx 尚未进入流式，可以安全重试
+                if attempt < MAX_RETRY && matches!(status, 429 | 500..=599) {
+                    tokio::time::sleep(delay).await;
+                    attempt += 1;
+                    delay *= 2;
+                    continue;
+                }
+                return Ok(resp);
+            }
+            Err(e) => {
+                let retryable = e.is_connect() || e.is_timeout();
+                if attempt < MAX_RETRY && retryable {
+                    tokio::time::sleep(delay).await;
+                    attempt += 1;
+                    delay *= 2;
+                    continue;
+                }
+                let code = if e.is_connect() || e.is_timeout() {
+                    ErrorCode::Network
+                } else {
+                    ErrorCode::Unknown
+                };
+                return Err(ApiError::new(code, e.to_string()));
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

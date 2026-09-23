@@ -1,6 +1,7 @@
 # QuinHub 移动端 — 协议映射约定（OpenAI 兼容 / Anthropic）
 
-版本：v0.1（骨架，M3 实现时以此为准并回写差异）
+版本：v1.0（M3 已实现并测试，集成测试见 core/crates/api/tests/mock_stream.rs）
+实现差异：Anthropic 规范化时若首条非 user 会前置占位 user 消息（"…"）；SSE 样本需以空行结尾（EOF 前最后一个事件否则不派发）。
 关联文档：[plan.md](./plan.md)、[decisions.md](./decisions.md)
 
 ## 1. 统一内部模型
