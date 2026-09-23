@@ -51,6 +51,9 @@
 - 利：Event→Bloc→State 单向数据流结构严谨，协作风格统一；状态机表达清晰；可测性好。
 - 弊：Event/State/Bloc 三件套模板代码重，琐碎状态也躲不开；依赖 widget 树注入；按需监听流要包一层，不如 StreamProvider 直接。
 
+### 实现备注（M2）
+先用无代码生成的写法（手写 `AsyncNotifier` / `NotifierProvider`），`riverpod_annotation + riverpod_generator` 待状态复杂度上来后再引入，避免 M2 就背上 build_runner。
+
 ## 决策三：Markdown 渲染（Flutter 侧最大风险点）
 
 结论：**先做「block 级增量渲染层」（与具体库解耦），库首选 flutter_markdown，M4 用 spike 定稿**。

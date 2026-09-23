@@ -39,3 +39,25 @@ pub trait ChatProvider: Send + Sync {
     /// 拉取可用模型列表（连通性测试用）。
     async fn list_models(&self) -> Result<Vec<String>, ApiError>;
 }
+
+/// ProviderProfile.type 的合法取值。
+pub const TYPE_OPENAI_COMPATIBLE: &str = "openai_compatible";
+pub const TYPE_ANTHROPIC: &str = "anthropic";
+
+/// 按 profile 类型构造 Provider。
+pub fn build_provider(
+    provider_type: &str,
+    base_url: &str,
+    api_key: &str,
+) -> Result<Box<dyn ChatProvider>, ApiError> {
+    match provider_type {
+        TYPE_OPENAI_COMPATIBLE => Ok(Box::new(crate::OpenAiCompatibleProvider::new(
+            base_url, api_key,
+        )?)),
+        TYPE_ANTHROPIC => Ok(Box::new(crate::AnthropicProvider::new(base_url, api_key)?)),
+        other => Err(ApiError::new(
+            crate::ErrorCode::Unknown,
+            format!("unknown provider type: {other}"),
+        )),
+    }
+}

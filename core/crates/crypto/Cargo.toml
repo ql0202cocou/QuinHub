@@ -5,4 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+aes-gcm = "0.10"
+base64 = "0.22"
+rand = "0.8"
 thiserror = { workspace = true }

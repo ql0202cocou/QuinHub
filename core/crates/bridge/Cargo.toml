@@ -10,8 +10,12 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 [dependencies]
 flutter_rust_bridge = "=2.13.0"
 quinhub-api = { path = "../api" }
+quinhub-storage = { path = "../storage" }
+quinhub-crypto = { path = "../crypto" }
 tokio = { workspace = true }
 futures = { workspace = true }
+anyhow = "1"
+serde_json = { workspace = true }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
