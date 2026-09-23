@@ -4,4 +4,6 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- 调试构建允许明文 HTTP：仅用于连本机 mock 服务器联调（M4），release 不含此项。 -->
+    <application android:usesCleartextTraffic="true"/>
 </manifest>

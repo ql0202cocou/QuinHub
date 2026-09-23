@@ -9,30 +9,40 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'chat.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `combine_system`, `parse_role`, `run_chat_inner`, `run_chat`, `summarize`, `to_dto`
+// These functions are ignored because they are not marked as `pub`: `auto_title`, `combine_system`, `drive_chat`, `spawn_chat`, `summarize`, `to_dto`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
 
-/// 发起流式对话。事件通过 sink 回推；流被 Dart 侧取消时任务随之结束。
+/// 发送新消息并流式回推（user_text 为 None 时按现有历史重发）。
 Stream<ChatEventDto> chatSend({
   required String chatId,
-  required String profileId,
-  required String model,
-  required List<ChatMessageDto> messages,
-  String? system,
-  double? temperature,
-  double? topP,
-  int? maxTokens,
-  int? contextWindow,
+  required String conversationId,
+  String? userText,
 }) => RustLib.instance.api.crateApiChatChatSend(
   chatId: chatId,
-  profileId: profileId,
-  model: model,
-  messages: messages,
-  system: system,
-  temperature: temperature,
-  topP: topP,
-  maxTokens: maxTokens,
-  contextWindow: contextWindow,
+  conversationId: conversationId,
+  userText: userText,
+);
+
+/// 重新生成：删除最后一条 assistant 消息后重发。
+Stream<ChatEventDto> chatRegenerate({
+  required String chatId,
+  required String conversationId,
+}) => RustLib.instance.api.crateApiChatChatRegenerate(
+  chatId: chatId,
+  conversationId: conversationId,
+);
+
+/// 编辑重发：改 user 消息内容，删除其后续，重发。
+Stream<ChatEventDto> chatEditResend({
+  required String chatId,
+  required String conversationId,
+  required String messageId,
+  required String newText,
+}) => RustLib.instance.api.crateApiChatChatEditResend(
+  chatId: chatId,
+  conversationId: conversationId,
+  messageId: messageId,
+  newText: newText,
 );
 
 /// 中止进行中的对话（无此 chat_id 时静默忽略）。
@@ -55,22 +65,4 @@ sealed class ChatEventDto with _$ChatEventDto {
     required String code,
     required String message,
   }) = ChatEventDto_Error;
-}
-
-class ChatMessageDto {
-  final String role;
-  final String content;
-
-  const ChatMessageDto({required this.role, required this.content});
-
-  @override
-  int get hashCode => role.hashCode ^ content.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ChatMessageDto &&
-          runtimeType == other.runtimeType &&
-          role == other.role &&
-          content == other.content;
 }

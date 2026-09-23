@@ -2,7 +2,7 @@
 
 mod model;
 
-pub use model::{NewProfile, ProviderProfile};
+pub use model::{Conversation, Message, NewProfile, ProviderProfile};
 
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};
 use thiserror::Error;
@@ -242,5 +242,307 @@ mod tests {
             .unwrap();
         assert_eq!(updated.encrypted_key, "enc:xxx");
         assert_eq!(updated.name, "A2");
+    }
+}
+
+// ==================== Conversation / Message（M4） ====================
+
+impl Storage {
+    pub async fn create_conversation(
+        &self,
+        profile_id: Option<&str>,
+        model_id: Option<&str>,
+    ) -> Result<Conversation, StorageError> {
+        let id = Uuid::new_v4().to_string();
+        let now = now_millis();
+        sqlx::query(
+            "INSERT INTO conversation (id, profile_id, model_id, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?)",
+        )
+        .bind(&id)
+        .bind(profile_id)
+        .bind(model_id)
+        .bind(now)
+        .bind(now)
+        .execute(&self.pool)
+        .await?;
+        self.get_conversation(&id).await
+    }
+
+    pub async fn get_conversation(&self, id: &str) -> Result<Conversation, StorageError> {
+        sqlx::query_as::<_, Conversation>(
+            "SELECT * FROM conversation WHERE id = ? AND deleted_at IS NULL",
+        )
+        .bind(id)
+        .fetch_optional(&self.pool)
+        .await?
+        .ok_or_else(|| StorageError::NotFound(id.to_string()))
+    }
+
+    /// 会话列表：未归档、未删除，置顶在前，按最近更新倒序（data-model.md 第 5 节）。
+    pub async fn list_conversations(&self) -> Result<Vec<Conversation>, StorageError> {
+        let rows = sqlx::query_as::<_, Conversation>(
+            "SELECT * FROM conversation WHERE archived = 0 AND deleted_at IS NULL
+             ORDER BY pinned DESC, updated_at DESC",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows)
+    }
+
+    /// 改标题/置顶/归档（None 表示不动该字段）。
+    pub async fn update_conversation_meta(
+        &self,
+        id: &str,
+        title: Option<&str>,
+        pinned: Option<bool>,
+        archived: Option<bool>,
+    ) -> Result<Conversation, StorageError> {
+        let now = now_millis();
+        if let Some(t) = title {
+            sqlx::query("UPDATE conversation SET title = ?, updated_at = ?, rev = rev + 1 WHERE id = ? AND deleted_at IS NULL")
+                .bind(t).bind(now).bind(id).execute(&self.pool).await?;
+        }
+        if let Some(p) = pinned {
+            sqlx::query("UPDATE conversation SET pinned = ?, updated_at = ?, rev = rev + 1 WHERE id = ? AND deleted_at IS NULL")
+                .bind(p).bind(now).bind(id).execute(&self.pool).await?;
+        }
+        if let Some(a) = archived {
+            sqlx::query("UPDATE conversation SET archived = ?, updated_at = ?, rev = rev + 1 WHERE id = ? AND deleted_at IS NULL")
+                .bind(a).bind(now).bind(id).execute(&self.pool).await?;
+        }
+        self.get_conversation(id).await
+    }
+
+    pub async fn set_conversation_model(
+        &self,
+        id: &str,
+        profile_id: &str,
+        model_id: &str,
+    ) -> Result<Conversation, StorageError> {
+        sqlx::query("UPDATE conversation SET profile_id = ?, model_id = ?, updated_at = ?, rev = rev + 1 WHERE id = ? AND deleted_at IS NULL")
+            .bind(profile_id)
+            .bind(model_id)
+            .bind(now_millis())
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+        self.get_conversation(id).await
+    }
+
+    /// 发消息时刷新排序时间戳。
+    pub async fn touch_conversation(&self, id: &str) -> Result<(), StorageError> {
+        sqlx::query("UPDATE conversation SET updated_at = ?, rev = rev + 1 WHERE id = ?")
+            .bind(now_millis())
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    /// 软删会话及其全部消息（墓碑，同事务）。
+    pub async fn delete_conversation(&self, id: &str) -> Result<(), StorageError> {
+        let now = now_millis();
+        let mut tx = self.pool.begin().await?;
+        sqlx::query("UPDATE message SET deleted_at = ?, rev = rev + 1 WHERE conversation_id = ? AND deleted_at IS NULL")
+            .bind(now)
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("UPDATE conversation SET deleted_at = ?, updated_at = ?, rev = rev + 1 WHERE id = ? AND deleted_at IS NULL")
+            .bind(now)
+            .bind(now)
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
+        Ok(())
+    }
+
+    /// 插入消息。status 由调用方给（user=done，assistant 流式起步=streaming）。
+    pub async fn insert_message(
+        &self,
+        conversation_id: &str,
+        role: &str,
+        content: &str,
+        model: Option<&str>,
+        status: &str,
+    ) -> Result<Message, StorageError> {
+        let id = Uuid::new_v4().to_string();
+        let now = now_millis();
+        sqlx::query(
+            "INSERT INTO message (id, conversation_id, role, content, model, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&id)
+        .bind(conversation_id)
+        .bind(role)
+        .bind(content)
+        .bind(model)
+        .bind(status)
+        .bind(now)
+        .bind(now)
+        .execute(&self.pool)
+        .await?;
+        sqlx::query_as::<_, Message>("SELECT * FROM message WHERE id = ?")
+            .bind(&id)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(StorageError::from)
+    }
+
+    /// 流式结束/出错/取消时更新消息终态。
+    pub async fn finalize_message(
+        &self,
+        id: &str,
+        content: &str,
+        status: &str,
+        error: Option<&str>,
+        tokens_in: Option<i64>,
+        tokens_out: Option<i64>,
+    ) -> Result<Message, StorageError> {
+        sqlx::query(
+            "UPDATE message SET content = ?, status = ?, error = ?, tokens_in = ?, tokens_out = ?, updated_at = ?, rev = rev + 1
+             WHERE id = ?",
+        )
+        .bind(content)
+        .bind(status)
+        .bind(error)
+        .bind(tokens_in)
+        .bind(tokens_out)
+        .bind(now_millis())
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+        sqlx::query_as::<_, Message>("SELECT * FROM message WHERE id = ?")
+            .bind(id)
+            .fetch_one(&self.pool)
+            .await
+            .map_err(StorageError::from)
+    }
+
+    /// 会话内消息（正序，未删除；同毫秒用 rowid 决胜，保证插入序稳定）。
+    pub async fn list_messages(&self, conversation_id: &str) -> Result<Vec<Message>, StorageError> {
+        let rows = sqlx::query_as::<_, Message>(
+            "SELECT * FROM message WHERE conversation_id = ? AND deleted_at IS NULL
+             ORDER BY created_at ASC, rowid ASC",
+        )
+        .bind(conversation_id)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows)
+    }
+
+    pub async fn get_message(&self, id: &str) -> Result<Message, StorageError> {
+        sqlx::query_as::<_, Message>("SELECT * FROM message WHERE id = ? AND deleted_at IS NULL")
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or_else(|| StorageError::NotFound(id.to_string()))
+    }
+
+    /// 软删单条消息。
+    pub async fn delete_message(&self, id: &str) -> Result<(), StorageError> {
+        sqlx::query("UPDATE message SET deleted_at = ?, updated_at = ?, rev = rev + 1 WHERE id = ? AND deleted_at IS NULL")
+            .bind(now_millis())
+            .bind(now_millis())
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    /// 软删某条消息之后的所有消息（不含本身）——重新生成/编辑重发用。
+    /// 用 rowid 比较（插入序单调），避免 created_at 毫秒精度同毫秒碰撞。
+    pub async fn delete_messages_after(
+        &self,
+        conversation_id: &str,
+        after_message_id: &str,
+    ) -> Result<(), StorageError> {
+        let now = now_millis();
+        let res = sqlx::query(
+            "UPDATE message SET deleted_at = ?, updated_at = ?, rev = rev + 1
+             WHERE conversation_id = ? AND deleted_at IS NULL
+               AND rowid > (SELECT rowid FROM message WHERE id = ?)",
+        )
+        .bind(now)
+        .bind(now)
+        .bind(conversation_id)
+        .bind(after_message_id)
+        .execute(&self.pool)
+        .await?;
+        if res.rows_affected() == 0 && self.get_message(after_message_id).await.is_err() {
+            return Err(StorageError::NotFound(after_message_id.to_string()));
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod conv_tests {
+    use super::*;
+
+    async fn setup() -> (Storage, String) {
+        let s = Storage::init_memory().await.unwrap();
+        // profile_id 有外键，先建真 profile
+        let p = s
+            .create_profile(NewProfile {
+                name: "P".into(),
+                provider_type: "openai_compatible".into(),
+                base_url: "http://x".into(),
+                encrypted_key: "enc".into(),
+                is_default: false,
+            })
+            .await
+            .unwrap();
+        let c = s
+            .create_conversation(Some(&p.id), Some("gpt-4o"))
+            .await
+            .unwrap();
+        (s, c.id)
+    }
+
+    #[tokio::test]
+    async fn conversation_message_flow() {
+        let (s, cid) = setup().await;
+
+        let u = s
+            .insert_message(&cid, "user", "你好", None, "done")
+            .await
+            .unwrap();
+        let a = s
+            .insert_message(&cid, "assistant", "", Some("gpt-4o"), "streaming")
+            .await
+            .unwrap();
+        let a = s
+            .finalize_message(&a.id, "你好！", "done", None, Some(2), Some(2))
+            .await
+            .unwrap();
+        assert_eq!(a.status, "done");
+        assert_eq!(a.tokens_in, Some(2));
+
+        let msgs = s.list_messages(&cid).await.unwrap();
+        assert_eq!(msgs.len(), 2);
+        assert_eq!(msgs[0].id, u.id);
+
+        // 删除 a 之后的（无影响），再从 u 之后删（删掉 a）
+        s.delete_messages_after(&cid, &a.id).await.unwrap();
+        assert_eq!(s.list_messages(&cid).await.unwrap().len(), 2);
+        s.delete_messages_after(&cid, &u.id).await.unwrap();
+        assert_eq!(s.list_messages(&cid).await.unwrap().len(), 1);
+
+        // 元信息 + 排序
+        s.update_conversation_meta(&cid, Some("测试会话"), Some(true), None)
+            .await
+            .unwrap();
+        let c2 = s.create_conversation(None, None).await.unwrap();
+        let list = s.list_conversations().await.unwrap();
+        assert_eq!(list[0].id, cid); // pinned 优先
+        assert_eq!(list[0].title, "测试会话");
+
+        // 级联软删
+        s.delete_conversation(&c2.id).await.unwrap();
+        assert_eq!(s.list_conversations().await.unwrap().len(), 1);
+        assert!(s.get_conversation(&c2.id).await.is_err());
     }
 }

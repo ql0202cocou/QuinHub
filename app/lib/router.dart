@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:quinhub/features/chat/chat_page.dart';
 import 'package:quinhub/features/home/home_page.dart';
 import 'package:quinhub/features/providers/provider_edit_page.dart';
 import 'package:quinhub/features/providers/providers_page.dart';
@@ -10,6 +11,11 @@ final routerProvider = Provider<GoRouter>(
   (ref) => GoRouter(
     routes: [
       GoRoute(path: '/', builder: (_, _) => const HomePage()),
+      GoRoute(
+        path: '/chat/:id',
+        builder: (_, state) =>
+            ChatPage(conversationId: state.pathParameters['id']!),
+      ),
       GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
       GoRoute(
         path: '/settings/providers',

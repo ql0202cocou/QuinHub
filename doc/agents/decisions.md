@@ -71,6 +71,13 @@
 
 执行方式：M4 安排半天 spike，用真实流式样本在真机上对比 flutter_markdown 与 gpt_markdown（流畅度、定制成本），届时定稿并更新本条目。
 
+### Spike 结果（M4 实测，2026-09-23，定稿）
+落地 **flutter_markdown + 自研 block 层**，但有重要修正：
+- **flutter_markdown 的 `pre` 自定义 builder 会触发 `_inlines.isEmpty` 断言崩溃**（widget 测试 A/B/C 隔离证实）；`selectable: true` 模式同样有此问题。
+- **对策**：代码块不走 pre builder——block 切分天然把 fence 块独立出来，整块由我们自渲染（flutter_highlight 高亮 + 复制按钮），flutter_markdown 只渲染普通 Markdown block。选择复制用长按消息菜单替代。
+- gpt_markdown 未实测（flutter_markdown 经此修正后够用）；若后续要 LaTeX 再评估。
+- 相关 widget 测试：app/test/markdown_test.dart。
+
 ## 决策四：上下文管理（Agent 化）
 
 结论：**历史全量存储不丢弃；发送时的上下文组装抽象为 ContextManager 模块（Agent 化），默认策略 `auto_summary`**。

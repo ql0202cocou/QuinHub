@@ -15,6 +15,8 @@ use thiserror::Error;
 pub enum CryptoError {
     #[error("master key not set")]
     KeyNotSet,
+    #[error("master key already set with different value")]
+    AlreadySet,
     #[error("invalid master key length: {0}")]
     BadKeyLength(usize),
     #[error("encrypt failed")]
@@ -27,7 +29,8 @@ pub enum CryptoError {
 
 static MASTER_KEY: OnceLock<[u8; 32]> = OnceLock::new();
 
-/// 注入主密钥（base64 编码的 32 字节）。启动时调用一次。
+/// 注入主密钥（base64 编码的 32 字节）。
+/// 幂等：同 key 重复注入返回 Ok（进程被系统缓存后重启，isolate 重建但 native 静态区仍在）。
 pub fn set_master_key(key_b64: &str) -> Result<(), CryptoError> {
     let raw = B64
         .decode(key_b64)
@@ -36,8 +39,11 @@ pub fn set_master_key(key_b64: &str) -> Result<(), CryptoError> {
         .as_slice()
         .try_into()
         .map_err(|_| CryptoError::BadKeyLength(raw.len()))?;
-    MASTER_KEY.set(key).map_err(|_| CryptoError::KeyNotSet)?;
-    Ok(())
+    match MASTER_KEY.get() {
+        Some(existing) if existing == &key => Ok(()),
+        Some(_) => Err(CryptoError::AlreadySet),
+        None => MASTER_KEY.set(key).map_err(|_| CryptoError::AlreadySet),
+    }
 }
 
 fn cipher() -> Result<Aes256Gcm, CryptoError> {
@@ -79,6 +85,14 @@ mod tests {
 
     fn test_key() -> String {
         B64.encode([42u8; 32])
+    }
+
+    #[test]
+    fn set_master_key_is_idempotent() {
+        set_master_key(&test_key()).unwrap();
+        set_master_key(&test_key()).unwrap();
+        let other = B64.encode([7u8; 32]);
+        assert!(set_master_key(&other).is_err()); // 不同 key → AlreadySet
     }
 
     #[test]
