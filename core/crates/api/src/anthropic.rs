@@ -34,19 +34,50 @@ impl AnthropicProvider {
     }
 }
 
-/// 消息规范化：滤掉 system（走顶层字段）、合并连续同角色、确保首条为 user。
+/// 消息 → Anthropic content parts（图片在前，文本在后）。
+fn message_parts(m: &ChatMessage) -> Vec<Value> {
+    let mut parts: Vec<Value> = m
+        .images
+        .iter()
+        .map(|img| {
+            json!({
+                "type": "image",
+                "source": {"type": "base64", "media_type": img.mime, "data": img.data},
+            })
+        })
+        .collect();
+    if !m.content.is_empty() {
+        parts.push(json!({"type": "text", "text": m.content}));
+    }
+    parts
+}
+
+/// 消息规范化：滤掉 system（走顶层字段）、合并连续同角色（parts 数组合并）、
+/// 确保首条为 user。纯文本消息保持字符串形式。
 pub(crate) fn normalize_messages(messages: &[ChatMessage]) -> Vec<Value> {
     let mut out: Vec<Value> = Vec::new();
     for m in messages.iter().filter(|m| m.role != Role::System) {
         let role = role_str(m.role);
+        let parts = message_parts(m);
         if let Some(last) = out.last_mut() {
             if last["role"] == role {
-                let prev = last["content"].as_str().unwrap_or_default().to_string();
-                *last = json!({"role": role, "content": format!("{prev}\n\n{}", m.content)});
+                let prev = match last["content"].take() {
+                    Value::String(s) => vec![json!({"type": "text", "text": s})],
+                    Value::Array(a) => a,
+                    _ => vec![],
+                };
+                let mut merged = prev;
+                merged.extend(parts);
+                *last = json!({"role": role, "content": merged});
                 continue;
             }
         }
-        out.push(json!({"role": role, "content": m.content}));
+        let content = if parts.len() == 1 && parts[0]["type"] == "text" {
+            json!(parts[0]["text"])
+        } else {
+            json!(parts)
+        };
+        out.push(json!({"role": role, "content": content}));
     }
     if out.first().is_some_and(|m| m["role"] != "user") {
         out.insert(0, json!({"role": "user", "content": "…"}));
@@ -264,10 +295,7 @@ mod tests {
     use super::*;
 
     fn msg(role: Role, content: &str) -> ChatMessage {
-        ChatMessage {
-            role,
-            content: content.to_string(),
-        }
+        ChatMessage::text(role, content)
     }
 
     #[test]
@@ -281,7 +309,10 @@ mod tests {
         ];
         let out = normalize_messages(&messages);
         assert_eq!(out.len(), 3);
-        assert_eq!(out[0]["content"], "a\n\nb");
+        // 连续同角色合并为 parts 数组
+        let merged = out[0]["content"].as_array().unwrap();
+        assert_eq!(merged[0]["text"], "a");
+        assert_eq!(merged[1]["text"], "b");
         assert_eq!(out[1]["role"], "assistant");
         assert_eq!(out[2]["content"], "d");
     }
@@ -387,6 +418,25 @@ mod tests {
     fn parses_models_response() {
         let body = r#"{"data":[{"type":"model","id":"claude-sonnet-4-5"}],"has_more":false}"#;
         assert_eq!(parse_models(body).unwrap(), vec!["claude-sonnet-4-5"]);
+    }
+
+    #[test]
+    fn request_with_images_uses_base64_source() {
+        let mut m = msg(Role::User, "看图");
+        m.images.push(crate::ImageData {
+            mime: "image/jpeg".into(),
+            data: "AAAA".into(),
+        });
+        let body = build_request(&ChatRequest {
+            model: "claude-sonnet-4-5".into(),
+            messages: vec![m],
+            ..Default::default()
+        });
+        let parts = body["messages"][0]["content"].as_array().unwrap();
+        assert_eq!(parts[0]["type"], "image");
+        assert_eq!(parts[0]["source"]["media_type"], "image/jpeg");
+        assert_eq!(parts[0]["source"]["data"], "AAAA");
+        assert_eq!(parts[1]["type"], "text");
     }
 
     #[test]

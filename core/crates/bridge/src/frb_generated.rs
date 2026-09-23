@@ -211,6 +211,8 @@ fn wire__crate__api__chat__chat_send_impl(
             let api_chat_id = <String>::sse_decode(&mut deserializer);
             let api_conversation_id = <String>::sse_decode(&mut deserializer);
             let api_user_text = <Option<String>>::sse_decode(&mut deserializer);
+            let api_user_images =
+                <Vec<crate::api::chat::ImageInput>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
                 transform_result_sse::<_, ()>(
@@ -221,6 +223,7 @@ fn wire__crate__api__chat__chat_send_impl(
                                 api_chat_id,
                                 api_conversation_id,
                                 api_user_text,
+                                api_user_images,
                             )
                             .await;
                         })?;
@@ -258,7 +261,7 @@ fn wire__crate__api__conversation__conversation_create_impl(
             let api_model_id = <Option<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok = crate::api::conversation::conversation_create(
                             api_profile_id,
@@ -298,7 +301,7 @@ fn wire__crate__api__conversation__conversation_delete_impl(
             let api_id = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok =
                             crate::api::conversation::conversation_delete(api_id).await?;
@@ -335,7 +338,7 @@ fn wire__crate__api__conversation__conversation_get_impl(
             let api_id = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok = crate::api::conversation::conversation_get(api_id).await?;
                         std::result::Result::Ok(output_ok)
@@ -370,7 +373,7 @@ fn wire__crate__api__conversation__conversation_list_impl(
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok = crate::api::conversation::conversation_list().await?;
                         std::result::Result::Ok(output_ok)
@@ -408,7 +411,7 @@ fn wire__crate__api__conversation__conversation_set_model_impl(
             let api_model_id = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok = crate::api::conversation::conversation_set_model(
                             api_id,
@@ -452,7 +455,7 @@ fn wire__crate__api__conversation__conversation_update_meta_impl(
             let api_archived = <Option<bool>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok = crate::api::conversation::conversation_update_meta(
                             api_id,
@@ -569,13 +572,17 @@ fn wire__crate__api__lifecycle__init_core_impl(
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             let api_db_path = <String>::sse_decode(&mut deserializer);
             let api_master_key_b64 = <String>::sse_decode(&mut deserializer);
+            let api_app_dir = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
-                        let output_ok =
-                            crate::api::lifecycle::init_core(api_db_path, api_master_key_b64)
-                                .await?;
+                        let output_ok = crate::api::lifecycle::init_core(
+                            api_db_path,
+                            api_master_key_b64,
+                            api_app_dir,
+                        )
+                        .await?;
                         std::result::Result::Ok(output_ok)
                     })()
                     .await,
@@ -609,7 +616,7 @@ fn wire__crate__api__message__message_delete_impl(
             let api_id = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok = crate::api::message::message_delete(api_id).await?;
                         std::result::Result::Ok(output_ok)
@@ -645,7 +652,7 @@ fn wire__crate__api__message__message_list_impl(
             let api_conversation_id = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok =
                             crate::api::message::message_list(api_conversation_id).await?;
@@ -686,7 +693,7 @@ fn wire__crate__api__profile__profile_create_impl(
             let api_is_default = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok = crate::api::profile::profile_create(
                             api_name,
@@ -729,7 +736,7 @@ fn wire__crate__api__profile__profile_delete_impl(
             let api_id = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok = crate::api::profile::profile_delete(api_id).await?;
                         std::result::Result::Ok(output_ok)
@@ -765,7 +772,7 @@ fn wire__crate__api__profile__profile_get_impl(
             let api_id = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok = crate::api::profile::profile_get(api_id).await?;
                         std::result::Result::Ok(output_ok)
@@ -800,7 +807,7 @@ fn wire__crate__api__profile__profile_list_impl(
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok = crate::api::profile::profile_list().await?;
                         std::result::Result::Ok(output_ok)
@@ -836,7 +843,7 @@ fn wire__crate__api__profile__profile_test_impl(
             let api_id = <String>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok = crate::api::profile::profile_test(api_id).await?;
                         std::result::Result::Ok(output_ok)
@@ -877,7 +884,7 @@ fn wire__crate__api__profile__profile_update_impl(
             let api_enabled_models = <Vec<String>>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| async move {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                transform_result_sse::<_, crate::api::BridgeError>(
                     (move || async move {
                         let output_ok = crate::api::profile::profile_update(
                             api_id,
@@ -937,6 +944,14 @@ impl SseDecode for bool {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         deserializer.cursor.read_u8().unwrap() != 0
+    }
+}
+
+impl SseDecode for crate::api::BridgeError {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_field0 = <String>::sse_decode(deserializer);
+        return crate::api::BridgeError(var_field0);
     }
 }
 
@@ -1010,6 +1025,20 @@ impl SseDecode for i64 {
     }
 }
 
+impl SseDecode for crate::api::chat::ImageInput {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_mime = <String>::sse_decode(deserializer);
+        let mut var_data = <String>::sse_decode(deserializer);
+        let mut var_filePath = <String>::sse_decode(deserializer);
+        return crate::api::chat::ImageInput {
+            mime: var_mime,
+            data: var_data,
+            file_path: var_filePath,
+        };
+    }
+}
+
 impl SseDecode for Vec<String> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1031,6 +1060,18 @@ impl SseDecode for Vec<crate::api::conversation::ConversationDto> {
             ans_.push(<crate::api::conversation::ConversationDto>::sse_decode(
                 deserializer,
             ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::chat::ImageInput> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::chat::ImageInput>::sse_decode(deserializer));
         }
         return ans_;
     }
@@ -1077,7 +1118,8 @@ impl SseDecode for crate::api::message::MessageDto {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_id = <String>::sse_decode(deserializer);
         let mut var_role = <String>::sse_decode(deserializer);
-        let mut var_content = <String>::sse_decode(deserializer);
+        let mut var_text = <String>::sse_decode(deserializer);
+        let mut var_images = <Vec<String>>::sse_decode(deserializer);
         let mut var_model = <Option<String>>::sse_decode(deserializer);
         let mut var_status = <String>::sse_decode(deserializer);
         let mut var_error = <Option<String>>::sse_decode(deserializer);
@@ -1087,7 +1129,8 @@ impl SseDecode for crate::api::message::MessageDto {
         return crate::api::message::MessageDto {
             id: var_id,
             role: var_role,
-            content: var_content,
+            text: var_text,
+            images: var_images,
             model: var_model,
             status: var_status,
             error: var_error,
@@ -1255,6 +1298,18 @@ fn pde_ffi_dispatcher_sync_impl(
 // Section: rust2dart
 
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::BridgeError {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [self.0.into_into_dart().into_dart()].into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::BridgeError {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::BridgeError> for crate::api::BridgeError {
+    fn into_into_dart(self) -> crate::api::BridgeError {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::chat::ChatEventDto {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         match self {
@@ -1322,12 +1377,32 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::conversation::ConversationDto
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::chat::ImageInput {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.mime.into_into_dart().into_dart(),
+            self.data.into_into_dart().into_dart(),
+            self.file_path.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::chat::ImageInput {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::chat::ImageInput>
+    for crate::api::chat::ImageInput
+{
+    fn into_into_dart(self) -> crate::api::chat::ImageInput {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::message::MessageDto {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.id.into_into_dart().into_dart(),
             self.role.into_into_dart().into_dart(),
-            self.content.into_into_dart().into_dart(),
+            self.text.into_into_dart().into_dart(),
+            self.images.into_into_dart().into_dart(),
             self.model.into_into_dart().into_dart(),
             self.status.into_into_dart().into_dart(),
             self.error.into_into_dart().into_dart(),
@@ -1413,6 +1488,13 @@ impl SseEncode for bool {
     }
 }
 
+impl SseEncode for crate::api::BridgeError {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.0, serializer);
+    }
+}
+
 impl SseEncode for crate::api::chat::ChatEventDto {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -1466,6 +1548,15 @@ impl SseEncode for i64 {
     }
 }
 
+impl SseEncode for crate::api::chat::ImageInput {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.mime, serializer);
+        <String>::sse_encode(self.data, serializer);
+        <String>::sse_encode(self.file_path, serializer);
+    }
+}
+
 impl SseEncode for Vec<String> {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -1482,6 +1573,16 @@ impl SseEncode for Vec<crate::api::conversation::ConversationDto> {
         <i32>::sse_encode(self.len() as _, serializer);
         for item in self {
             <crate::api::conversation::ConversationDto>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::chat::ImageInput> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::chat::ImageInput>::sse_encode(item, serializer);
         }
     }
 }
@@ -1521,7 +1622,8 @@ impl SseEncode for crate::api::message::MessageDto {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.id, serializer);
         <String>::sse_encode(self.role, serializer);
-        <String>::sse_encode(self.content, serializer);
+        <String>::sse_encode(self.text, serializer);
+        <Vec<String>>::sse_encode(self.images, serializer);
         <Option<String>>::sse_encode(self.model, serializer);
         <String>::sse_encode(self.status, serializer);
         <Option<String>>::sse_encode(self.error, serializer);

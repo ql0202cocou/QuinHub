@@ -6,6 +6,7 @@
 // Static analysis wrongly picks the IO variant, thus ignore this
 // ignore_for_file: argument_type_not_assignable
 
+import 'api.dart';
 import 'api/chat.dart';
 import 'api/conversation.dart';
 import 'api/echo.dart';
@@ -52,6 +53,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 dco_decode_box_autoadd_i_64(dynamic raw);
 
   @protected
+  BridgeError dco_decode_bridge_error(dynamic raw);
+
+  @protected
   ChatEventDto dco_decode_chat_event_dto(dynamic raw);
 
   @protected
@@ -61,10 +65,16 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 dco_decode_i_64(dynamic raw);
 
   @protected
+  ImageInput dco_decode_image_input(dynamic raw);
+
+  @protected
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
   List<ConversationDto> dco_decode_list_conversation_dto(dynamic raw);
+
+  @protected
+  List<ImageInput> dco_decode_list_image_input(dynamic raw);
 
   @protected
   List<MessageDto> dco_decode_list_message_dto(dynamic raw);
@@ -125,6 +135,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 sse_decode_box_autoadd_i_64(SseDeserializer deserializer);
 
   @protected
+  BridgeError sse_decode_bridge_error(SseDeserializer deserializer);
+
+  @protected
   ChatEventDto sse_decode_chat_event_dto(SseDeserializer deserializer);
 
   @protected
@@ -134,12 +147,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
 
   @protected
+  ImageInput sse_decode_image_input(SseDeserializer deserializer);
+
+  @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
 
   @protected
   List<ConversationDto> sse_decode_list_conversation_dto(
     SseDeserializer deserializer,
   );
+
+  @protected
+  List<ImageInput> sse_decode_list_image_input(SseDeserializer deserializer);
 
   @protected
   List<MessageDto> sse_decode_list_message_dto(SseDeserializer deserializer);
@@ -211,6 +230,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_bridge_error(BridgeError self, SseSerializer serializer);
+
+  @protected
   void sse_encode_chat_event_dto(ChatEventDto self, SseSerializer serializer);
 
   @protected
@@ -223,11 +245,20 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
 
   @protected
+  void sse_encode_image_input(ImageInput self, SseSerializer serializer);
+
+  @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_conversation_dto(
     List<ConversationDto> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_image_input(
+    List<ImageInput> self,
     SseSerializer serializer,
   );
 

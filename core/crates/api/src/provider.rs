@@ -11,10 +11,30 @@ pub enum Role {
     Assistant,
 }
 
+/// 图片内容（base64）。mime 如 image/jpeg。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImageData {
+    pub mime: String,
+    pub data: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatMessage {
     pub role: Role,
     pub content: String,
+    #[serde(default)]
+    pub images: Vec<ImageData>,
+}
+
+impl ChatMessage {
+    /// 纯文本消息快捷构造。
+    pub fn text(role: Role, content: impl Into<String>) -> Self {
+        Self {
+            role,
+            content: content.into(),
+            images: vec![],
+        }
+    }
 }
 
 /// 统一聊天请求，序列化为各协议请求体的差异由各 Provider 实现处理。

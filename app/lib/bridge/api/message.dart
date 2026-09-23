@@ -3,11 +3,13 @@
 
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
+import '../api.dart';
 import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `to_dto`
+// These functions are ignored because they are not marked as `pub`: `clean`, `parse_content`, `to_dto`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `ImagePart`
 
 Future<List<MessageDto>> messageList({required String conversationId}) =>
     RustLib.instance.api.crateApiMessageMessageList(
@@ -21,8 +23,11 @@ class MessageDto {
   final String id;
   final String role;
 
-  /// 本期为纯文本（content parts 中的 text）。
-  final String content;
+  /// 文本部分（多段 text 以空行拼接）。
+  final String text;
+
+  /// 图片相对路径（app_dir/files/...）。
+  final List<String> images;
   final String? model;
   final String status;
   final String? error;
@@ -33,7 +38,8 @@ class MessageDto {
   const MessageDto({
     required this.id,
     required this.role,
-    required this.content,
+    required this.text,
+    required this.images,
     this.model,
     required this.status,
     this.error,
@@ -46,7 +52,8 @@ class MessageDto {
   int get hashCode =>
       id.hashCode ^
       role.hashCode ^
-      content.hashCode ^
+      text.hashCode ^
+      images.hashCode ^
       model.hashCode ^
       status.hashCode ^
       error.hashCode ^
@@ -61,7 +68,8 @@ class MessageDto {
           runtimeType == other.runtimeType &&
           id == other.id &&
           role == other.role &&
-          content == other.content &&
+          text == other.text &&
+          images == other.images &&
           model == other.model &&
           status == other.status &&
           error == other.error &&

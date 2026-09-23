@@ -32,9 +32,15 @@ class ChatNotifier extends FamilyAsyncNotifier<ChatState, String> {
     return ChatState(messages: msgs);
   }
 
-  Future<void> send(String text) => _drive(
-    () => chatSend(chatId: _newChatId(), conversationId: arg, userText: text),
-  );
+  Future<void> send(String text, {List<ImageInput> images = const []}) =>
+      _drive(
+        () => chatSend(
+          chatId: _newChatId(),
+          conversationId: arg,
+          userText: text,
+          userImages: images,
+        ),
+      );
 
   Future<void> regenerate() =>
       _drive(() => chatRegenerate(chatId: _newChatId(), conversationId: arg));

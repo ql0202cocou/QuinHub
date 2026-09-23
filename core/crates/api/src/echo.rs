@@ -53,10 +53,7 @@ mod tests {
         let provider = EchoProvider;
         let req = ChatRequest {
             model: "echo".into(),
-            messages: vec![ChatMessage {
-                role: Role::User,
-                content: "你好".into(),
-            }],
+            messages: vec![ChatMessage::text(Role::User, "你好")],
             ..Default::default()
         };
         let events: Vec<ChatEvent> = provider.chat_stream(req).await.unwrap().collect().await;

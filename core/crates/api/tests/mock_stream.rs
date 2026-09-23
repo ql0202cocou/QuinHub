@@ -66,10 +66,7 @@ async fn serve_once(status: &'static str, body: &'static str) -> String {
 fn req() -> ChatRequest {
     ChatRequest {
         model: "test-model".into(),
-        messages: vec![ChatMessage {
-            role: Role::User,
-            content: "hi".into(),
-        }],
+        messages: vec![ChatMessage::text(Role::User, "hi")],
         ..Default::default()
     }
 }

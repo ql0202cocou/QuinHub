@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:quinhub/bridge/frb_generated.dart';
 import 'package:quinhub/router.dart';
+import 'package:quinhub/state/core.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await RustLib.init();
-  runApp(const ProviderScope(child: QuinHubApp()));
+  final dir = await getApplicationDocumentsDirectory();
+  runApp(
+    ProviderScope(
+      overrides: [appDirProvider.overrideWithValue(dir.path)],
+      child: const QuinHubApp(),
+    ),
+  );
 }
 
 class QuinHubApp extends ConsumerWidget {

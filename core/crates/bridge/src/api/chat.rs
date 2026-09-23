@@ -6,8 +6,11 @@
 use super::lifecycle::storage;
 use crate::frb_generated::StreamSink;
 use anyhow::Context;
+use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
 use futures::StreamExt;
-use quinhub_api::{build_provider, ChatEvent, ChatMessage, ChatProvider, ChatRequest, Role};
+use quinhub_api::{
+    build_provider, ChatEvent, ChatMessage, ChatProvider, ChatRequest, ImageData, Role,
+};
 use quinhub_context::{plan_context, ContextPlan};
 use quinhub_storage::Storage;
 use std::collections::HashMap;
@@ -24,6 +27,13 @@ pub enum ChatEventDto {
     Error { code: String, message: String },
 }
 
+/// 新消息附带的图片（Dart 侧压缩后传入；file_path 已落盘 files/ 相对路径）。
+pub struct ImageInput {
+    pub mime: String,
+    pub data: String,
+    pub file_path: String,
+}
+
 static CHAT_CANCELS: LazyLock<Mutex<HashMap<String, watch::Sender<bool>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
@@ -35,11 +45,13 @@ pub async fn chat_send(
     chat_id: String,
     conversation_id: String,
     user_text: Option<String>,
+    user_images: Vec<ImageInput>,
 ) {
     spawn_chat(sink, chat_id, conversation_id, move |st, conv, sink, rx| {
         Box::pin(async move {
             if let Some(text) = user_text {
-                st.insert_message(&conv, "user", &text, None, "done")
+                let content = build_user_content(&text, &user_images);
+                st.insert_message(&conv, "user", &content, None, "done")
                     .await
                     .context("insert user message")?;
                 st.touch_conversation(&conv).await.ok();
@@ -82,7 +94,9 @@ pub async fn chat_edit_resend(
     spawn_chat(sink, chat_id, conversation_id, move |st, conv, sink, rx| {
         Box::pin(async move {
             let m = st.get_message(&message_id).await?;
-            st.finalize_message(&m.id, &new_text, "done", None, m.tokens_in, m.tokens_out)
+            let (_, parts) = super::message::parse_content(&m.content);
+            let content = rebuild_content(&new_text, &parts);
+            st.finalize_message(&m.id, &content, "done", None, m.tokens_in, m.tokens_out)
                 .await
                 .context("update message")?;
             st.delete_messages_after(&conv, &message_id)
@@ -202,9 +216,12 @@ async fn drive_chat(
             "system" => Role::System,
             _ => Role::User,
         };
+        let (text, parts) = super::message::parse_content(&m.content);
+        let images: Vec<ImageData> = parts.iter().filter_map(|p| read_image(p).ok()).collect();
         usable.push(ChatMessage {
             role,
-            content: m.content.clone(),
+            content: text,
+            images,
         });
     }
 
@@ -362,4 +379,45 @@ async fn summarize(
         anyhow::bail!("summary returned empty");
     }
     Ok(out)
+}
+
+/// 用户消息落库 content：纯文本保持纯文本（向后兼容），带图则 JSON parts。
+fn build_user_content(text: &str, images: &[ImageInput]) -> String {
+    if images.is_empty() {
+        return text.to_string();
+    }
+    let mut parts = Vec::new();
+    if !text.is_empty() {
+        parts.push(serde_json::json!({"type": "text", "text": text}));
+    }
+    for img in images {
+        parts.push(serde_json::json!({
+            "type": "image",
+            "mime": img.mime,
+            "file": img.file_path,
+        }));
+    }
+    serde_json::to_string(&parts).unwrap_or_else(|_| text.to_string())
+}
+
+/// 编辑重发时重建 content（保留原图片 parts）。
+fn rebuild_content(new_text: &str, parts: &[super::message::ImagePart]) -> String {
+    if parts.is_empty() {
+        return new_text.to_string();
+    }
+    let mut out = vec![serde_json::json!({"type": "text", "text": new_text})];
+    for p in parts {
+        out.push(serde_json::json!({"type": "image", "mime": p.mime, "file": p.path}));
+    }
+    serde_json::to_string(&out).unwrap_or_else(|_| new_text.to_string())
+}
+
+/// 历史回放：从 files/ 读图片为 base64。
+fn read_image(part: &super::message::ImagePart) -> anyhow::Result<ImageData> {
+    let dir = super::lifecycle::app_dir()?;
+    let bytes = std::fs::read(format!("{dir}/{}", part.path))?;
+    Ok(ImageData {
+        mime: part.mime.clone(),
+        data: B64.encode(bytes),
+    })
 }

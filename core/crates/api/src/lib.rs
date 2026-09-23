@@ -14,4 +14,4 @@ pub use echo::EchoProvider;
 pub use error::ApiError;
 pub use event::{ChatEvent, ErrorCode};
 pub use openai::{OpenAiCompatibleProvider, DEFAULT_OPENAI_BASE_URL};
-pub use provider::{build_provider, ChatMessage, ChatProvider, ChatRequest, Role};
+pub use provider::{build_provider, ChatMessage, ChatProvider, ChatRequest, ImageData, Role};

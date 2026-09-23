@@ -3,16 +3,22 @@
 
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
+import '../api.dart';
 import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `storage`
+// These functions are ignored because they are not marked as `pub`: `app_dir`, `init_core_inner`, `storage`
 
-/// 启动时调用：注入主密钥（base64 的 32B）并打开数据库。
-/// db_path 由 Dart 侧 path_provider 提供。
-Future<void> initCore({required String dbPath, required String masterKeyB64}) =>
-    RustLib.instance.api.crateApiLifecycleInitCore(
-      dbPath: dbPath,
-      masterKeyB64: masterKeyB64,
-    );
+/// 启动时调用：注入主密钥（base64 的 32B）、打开数据库、记录应用文档目录。
+/// db_path / app_dir 由 Dart 侧 path_provider 提供。
+/// 幂等：进程缓存重启（isolate 重建）时重复调用返回 Ok。
+Future<void> initCore({
+  required String dbPath,
+  required String masterKeyB64,
+  required String appDir,
+}) => RustLib.instance.api.crateApiLifecycleInitCore(
+  dbPath: dbPath,
+  masterKeyB64: masterKeyB64,
+  appDir: appDir,
+);

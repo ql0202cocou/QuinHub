@@ -3,6 +3,7 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api.dart';
 import 'api/chat.dart';
 import 'api/conversation.dart';
 import 'api/echo.dart';
@@ -104,6 +105,7 @@ abstract class RustLibApi extends BaseApi {
     required String chatId,
     required String conversationId,
     String? userText,
+    required List<ImageInput> userImages,
   });
 
   Future<ConversationDto> crateApiConversationConversationCreate({
@@ -139,6 +141,7 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateApiLifecycleInitCore({
     required String dbPath,
     required String masterKeyB64,
+    required String appDir,
   });
 
   Future<void> crateApiMessageMessageDelete({required String id});
@@ -296,6 +299,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required String chatId,
     required String conversationId,
     String? userText,
+    required List<ImageInput> userImages,
   }) {
     final sink = RustStreamSink<ChatEventDto>();
     unawaited(
@@ -307,6 +311,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             sse_encode_String(chatId, serializer);
             sse_encode_String(conversationId, serializer);
             sse_encode_opt_String(userText, serializer);
+            sse_encode_list_image_input(userImages, serializer);
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
@@ -319,7 +324,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             decodeErrorData: null,
           ),
           constMeta: kCrateApiChatChatSendConstMeta,
-          argValues: [sink, chatId, conversationId, userText],
+          argValues: [sink, chatId, conversationId, userText, userImages],
           apiImpl: this,
         ),
       ),
@@ -329,7 +334,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateApiChatChatSendConstMeta => const TaskConstMeta(
     debugName: "chat_send",
-    argNames: ["sink", "chatId", "conversationId", "userText"],
+    argNames: ["sink", "chatId", "conversationId", "userText", "userImages"],
   );
 
   @override
@@ -352,7 +357,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_conversation_dto,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiConversationConversationCreateConstMeta,
         argValues: [profileId, modelId],
@@ -383,7 +388,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiConversationConversationDeleteConstMeta,
         argValues: [id],
@@ -413,7 +418,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_conversation_dto,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiConversationConversationGetConstMeta,
         argValues: [id],
@@ -440,7 +445,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_conversation_dto,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiConversationConversationListConstMeta,
         argValues: [],
@@ -474,7 +479,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_conversation_dto,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiConversationConversationSetModelConstMeta,
         argValues: [id, profileId, modelId],
@@ -513,7 +518,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_conversation_dto,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiConversationConversationUpdateMetaConstMeta,
         argValues: [id, title, pinned, archived],
@@ -594,6 +599,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<void> crateApiLifecycleInitCore({
     required String dbPath,
     required String masterKeyB64,
+    required String appDir,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -601,6 +607,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(dbPath, serializer);
           sse_encode_String(masterKeyB64, serializer);
+          sse_encode_String(appDir, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -610,10 +617,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiLifecycleInitCoreConstMeta,
-        argValues: [dbPath, masterKeyB64],
+        argValues: [dbPath, masterKeyB64, appDir],
         apiImpl: this,
       ),
     );
@@ -621,7 +628,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateApiLifecycleInitCoreConstMeta => const TaskConstMeta(
     debugName: "init_core",
-    argNames: ["dbPath", "masterKeyB64"],
+    argNames: ["dbPath", "masterKeyB64", "appDir"],
   );
 
   @override
@@ -640,7 +647,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiMessageMessageDeleteConstMeta,
         argValues: [id],
@@ -670,7 +677,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_message_dto,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiMessageMessageListConstMeta,
         argValues: [conversationId],
@@ -710,7 +717,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_profile_dto,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiProfileProfileCreateConstMeta,
         argValues: [name, providerType, baseUrl, apiKey, isDefault],
@@ -741,7 +748,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_unit,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiProfileProfileDeleteConstMeta,
         argValues: [id],
@@ -769,7 +776,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_profile_dto,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiProfileProfileGetConstMeta,
         argValues: [id],
@@ -796,7 +803,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_profile_dto,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiProfileProfileListConstMeta,
         argValues: [],
@@ -824,7 +831,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_list_String,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiProfileProfileTestConstMeta,
         argValues: [id],
@@ -864,7 +871,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_profile_dto,
-          decodeErrorData: sse_decode_AnyhowException,
+          decodeErrorData: sse_decode_bridge_error,
         ),
         constMeta: kCrateApiProfileProfileUpdateConstMeta,
         argValues: [id, name, baseUrl, apiKey, isDefault, enabledModels],
@@ -931,6 +938,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  BridgeError dco_decode_bridge_error(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 1)
+      throw Exception('unexpected arr length: expect 1 but see ${arr.length}');
+    return BridgeError(field0: dco_decode_String(arr[0]));
+  }
+
+  @protected
   ChatEventDto dco_decode_chat_event_dto(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     switch (raw[0]) {
@@ -980,6 +996,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ImageInput dco_decode_image_input(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return ImageInput(
+      mime: dco_decode_String(arr[0]),
+      data: dco_decode_String(arr[1]),
+      filePath: dco_decode_String(arr[2]),
+    );
+  }
+
+  @protected
   List<String> dco_decode_list_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_String).toList();
@@ -989,6 +1018,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   List<ConversationDto> dco_decode_list_conversation_dto(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_conversation_dto).toList();
+  }
+
+  @protected
+  List<ImageInput> dco_decode_list_image_input(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_image_input).toList();
   }
 
   @protected
@@ -1013,18 +1048,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   MessageDto dco_decode_message_dto(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 9)
-      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
+    if (arr.length != 10)
+      throw Exception('unexpected arr length: expect 10 but see ${arr.length}');
     return MessageDto(
       id: dco_decode_String(arr[0]),
       role: dco_decode_String(arr[1]),
-      content: dco_decode_String(arr[2]),
-      model: dco_decode_opt_String(arr[3]),
-      status: dco_decode_String(arr[4]),
-      error: dco_decode_opt_String(arr[5]),
-      tokensIn: dco_decode_opt_box_autoadd_i_64(arr[6]),
-      tokensOut: dco_decode_opt_box_autoadd_i_64(arr[7]),
-      createdAt: dco_decode_i_64(arr[8]),
+      text: dco_decode_String(arr[2]),
+      images: dco_decode_list_String(arr[3]),
+      model: dco_decode_opt_String(arr[4]),
+      status: dco_decode_String(arr[5]),
+      error: dco_decode_opt_String(arr[6]),
+      tokensIn: dco_decode_opt_box_autoadd_i_64(arr[7]),
+      tokensOut: dco_decode_opt_box_autoadd_i_64(arr[8]),
+      createdAt: dco_decode_i_64(arr[9]),
     );
   }
 
@@ -1130,6 +1166,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  BridgeError sse_decode_bridge_error(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 = sse_decode_String(deserializer);
+    return BridgeError(field0: var_field0);
+  }
+
+  @protected
   ChatEventDto sse_decode_chat_event_dto(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -1186,6 +1229,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  ImageInput sse_decode_image_input(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_mime = sse_decode_String(deserializer);
+    var var_data = sse_decode_String(deserializer);
+    var var_filePath = sse_decode_String(deserializer);
+    return ImageInput(mime: var_mime, data: var_data, filePath: var_filePath);
+  }
+
+  @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -1207,6 +1259,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var ans_ = <ConversationDto>[];
     for (var idx_ = 0; idx_ < len_; ++idx_) {
       ans_.add(sse_decode_conversation_dto(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<ImageInput> sse_decode_list_image_input(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <ImageInput>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_image_input(deserializer));
     }
     return ans_;
   }
@@ -1247,7 +1311,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_id = sse_decode_String(deserializer);
     var var_role = sse_decode_String(deserializer);
-    var var_content = sse_decode_String(deserializer);
+    var var_text = sse_decode_String(deserializer);
+    var var_images = sse_decode_list_String(deserializer);
     var var_model = sse_decode_opt_String(deserializer);
     var var_status = sse_decode_String(deserializer);
     var var_error = sse_decode_opt_String(deserializer);
@@ -1257,7 +1322,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return MessageDto(
       id: var_id,
       role: var_role,
-      content: var_content,
+      text: var_text,
+      images: var_images,
       model: var_model,
       status: var_status,
       error: var_error,
@@ -1415,6 +1481,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_bridge_error(BridgeError self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.field0, serializer);
+  }
+
+  @protected
   void sse_encode_chat_event_dto(ChatEventDto self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     switch (self) {
@@ -1460,6 +1532,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_image_input(ImageInput self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.mime, serializer);
+    sse_encode_String(self.data, serializer);
+    sse_encode_String(self.filePath, serializer);
+  }
+
+  @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
@@ -1477,6 +1557,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_conversation_dto(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_image_input(
+    List<ImageInput> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_image_input(item, serializer);
     }
   }
 
@@ -1519,7 +1611,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.id, serializer);
     sse_encode_String(self.role, serializer);
-    sse_encode_String(self.content, serializer);
+    sse_encode_String(self.text, serializer);
+    sse_encode_list_String(self.images, serializer);
     sse_encode_opt_String(self.model, serializer);
     sse_encode_String(self.status, serializer);
     sse_encode_opt_String(self.error, serializer);

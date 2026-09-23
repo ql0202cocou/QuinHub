@@ -77,12 +77,12 @@ pub fn summary_prompt(older: &[ChatMessage]) -> ChatMessage {
         };
         transcript.push_str(&format!("{label}：{}\n\n", m.content));
     }
-    ChatMessage {
-        role: Role::User,
-        content: format!(
+    ChatMessage::text(
+        Role::User,
+        format!(
             "请将以下对话历史压缩为一份简洁的上下文摘要，保留关键事实、用户偏好、已做出的决定与未完成的任务，供后续对话使用：\n\n{transcript}"
         ),
-    }
+    )
 }
 
 /// 摘要落地：返回（注入的 system 文本, 保留的最近消息）。
@@ -95,10 +95,7 @@ mod tests {
     use super::*;
 
     fn msg(role: Role, content: &str) -> ChatMessage {
-        ChatMessage {
-            role,
-            content: content.to_string(),
-        }
+        ChatMessage::text(role, content)
     }
 
     #[test]

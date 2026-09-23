@@ -1,7 +1,12 @@
 //! 会话桥接：CRUD + 模型切换。
 
 use super::lifecycle::storage;
+use super::BridgeError;
 use anyhow::Context;
+
+fn clean(e: anyhow::Error) -> BridgeError {
+    BridgeError(format!("{e:#}"))
+}
 use quinhub_storage::Conversation;
 
 pub struct ConversationDto {
@@ -31,27 +36,33 @@ fn to_dto(c: Conversation) -> ConversationDto {
 pub async fn conversation_create(
     profile_id: Option<String>,
     model_id: Option<String>,
-) -> anyhow::Result<ConversationDto> {
-    let c = storage()?
+) -> Result<ConversationDto, BridgeError> {
+    let c = storage()
+        .map_err(clean)?
         .create_conversation(profile_id.as_deref(), model_id.as_deref())
         .await
-        .context("create conversation")?;
+        .context("create conversation")
+        .map_err(clean)?;
     Ok(to_dto(c))
 }
 
-pub async fn conversation_list() -> anyhow::Result<Vec<ConversationDto>> {
-    let rows = storage()?
+pub async fn conversation_list() -> Result<Vec<ConversationDto>, BridgeError> {
+    let rows = storage()
+        .map_err(clean)?
         .list_conversations()
         .await
-        .context("list conversations")?;
+        .context("list conversations")
+        .map_err(clean)?;
     Ok(rows.into_iter().map(to_dto).collect())
 }
 
-pub async fn conversation_get(id: String) -> anyhow::Result<ConversationDto> {
-    let c = storage()?
+pub async fn conversation_get(id: String) -> Result<ConversationDto, BridgeError> {
+    let c = storage()
+        .map_err(clean)?
         .get_conversation(&id)
         .await
-        .context("get conversation")?;
+        .context("get conversation")
+        .map_err(clean)?;
     Ok(to_dto(c))
 }
 
@@ -61,11 +72,13 @@ pub async fn conversation_update_meta(
     title: Option<String>,
     pinned: Option<bool>,
     archived: Option<bool>,
-) -> anyhow::Result<ConversationDto> {
-    let c = storage()?
+) -> Result<ConversationDto, BridgeError> {
+    let c = storage()
+        .map_err(clean)?
         .update_conversation_meta(&id, title.as_deref(), pinned, archived)
         .await
-        .context("update conversation")?;
+        .context("update conversation")
+        .map_err(clean)?;
     Ok(to_dto(c))
 }
 
@@ -73,17 +86,21 @@ pub async fn conversation_set_model(
     id: String,
     profile_id: String,
     model_id: String,
-) -> anyhow::Result<ConversationDto> {
-    let c = storage()?
+) -> Result<ConversationDto, BridgeError> {
+    let c = storage()
+        .map_err(clean)?
         .set_conversation_model(&id, &profile_id, &model_id)
         .await
-        .context("set model")?;
+        .context("set model")
+        .map_err(clean)?;
     Ok(to_dto(c))
 }
 
-pub async fn conversation_delete(id: String) -> anyhow::Result<()> {
-    storage()?
+pub async fn conversation_delete(id: String) -> Result<(), BridgeError> {
+    storage()
+        .map_err(clean)?
         .delete_conversation(&id)
         .await
         .context("delete conversation")
+        .map_err(clean)
 }

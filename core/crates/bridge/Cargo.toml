@@ -16,6 +16,7 @@ quinhub-crypto = { path = "../crypto" }
 tokio = { workspace = true }
 futures = { workspace = true }
 anyhow = "1"
+base64 = "0.22"
 serde_json = { workspace = true }
 
 [lints.rust]

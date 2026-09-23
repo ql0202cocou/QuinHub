@@ -1,14 +1,25 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:quinhub/bridge/api/chat.dart';
 import 'package:quinhub/bridge/api/conversation.dart';
 import 'package:quinhub/bridge/api/message.dart';
 import 'package:quinhub/features/chat/widgets/markdown_view.dart';
 import 'package:quinhub/features/chat/widgets/message_bubble.dart';
+import 'package:quinhub/features/chat/share.dart';
 import 'package:quinhub/state/chat.dart';
 import 'package:quinhub/state/conversations.dart';
+import 'package:quinhub/state/core.dart';
 import 'package:quinhub/state/profiles.dart';
+import 'package:uuid/uuid.dart';
 
-/// 聊天页：消息列表 + 流式渲染 + 输入栏 + 模型切换 + 长按消息菜单。
+/// 聊天页：消息列表 + 流式渲染 + 输入栏（含图片）+ 模型切换 + 长按消息菜单。
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key, required this.conversationId});
 
@@ -22,6 +33,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
   bool _atBottom = true;
+
+  /// 待发送图片（已压缩落盘 files/）。
+  final List<({String filePath, Uint8List bytes})> _pendingImages = [];
 
   String get _id => widget.conversationId;
 
@@ -52,13 +66,57 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   Future<void> _send() async {
     final text = _input.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty && _pendingImages.isEmpty) return;
+    final images = [
+      for (final img in _pendingImages)
+        ImageInput(
+          mime: 'image/jpeg',
+          data: base64Encode(img.bytes),
+          filePath: img.filePath,
+        ),
+    ];
     _input.clear();
-    await ref.read(chatProvider(_id).notifier).send(text);
+    setState(() => _pendingImages.clear());
+    await ref.read(chatProvider(_id).notifier).send(text, images: images);
+  }
+
+  Future<void> _pickImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('相册'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('拍照'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+    final x = await ImagePicker().pickImage(source: source, maxWidth: 2048);
+    if (x == null) return;
+    final bytes =
+        await FlutterImageCompress.compressWithFile(x.path, quality: 85) ??
+        await x.readAsBytes();
+    final appDir = ref.read(appDirProvider);
+    final rel = 'files/${const Uuid().v4()}.jpg';
+    final f = File('$appDir/$rel');
+    await f.create(recursive: true);
+    await f.writeAsBytes(bytes);
+    setState(() => _pendingImages.add((filePath: rel, bytes: bytes)));
   }
 
   Future<void> _editResend(MessageDto m) async {
-    final controller = TextEditingController(text: m.content);
+    final controller = TextEditingController(text: m.text);
     final text = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -132,6 +190,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final convAsync = ref.watch(conversationProvider(_id));
     final chatAsync = ref.watch(chatProvider(_id));
     final chat = chatAsync.valueOrNull;
+    final appDir = ref.watch(appDirProvider);
 
     // 流式时自动跟随底部
     if (chat?.streaming ?? false) _scrollToBottom();
@@ -154,6 +213,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             ),
             orElse: () => const SizedBox.shrink(),
           ),
+          PopupMenuButton<String>(
+            tooltip: '更多',
+            onSelected: (v) {
+              final msgs = chatAsync.valueOrNull?.messages ?? [];
+              final title = convAsync.valueOrNull?.title ?? '';
+              if (v == 'md') exportMarkdown(title, msgs);
+              if (v == 'img') shareAsImage(context, title, msgs);
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'md', child: Text('导出 Markdown')),
+              PopupMenuItem(value: 'img', child: Text('分享长图')),
+            ],
+          ),
         ],
       ),
       body: Column(
@@ -172,13 +244,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   ),
                   children: [
                     for (var i = 0; i < messages.length; i++)
-                      _bubbleFor(messages, i, chat),
+                      _bubbleFor(messages, i, chat, appDir),
                     if (chat.streaming) _streamingBubble(chat),
                   ],
                 );
               },
             ),
           ),
+          if (_pendingImages.isNotEmpty) _imageChips(),
           const Divider(height: 1),
           _inputBar(chat?.streaming ?? false),
         ],
@@ -186,13 +259,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
-  Widget _bubbleFor(List<MessageDto> messages, int i, ChatState chat) {
+  Widget _bubbleFor(
+    List<MessageDto> messages,
+    int i,
+    ChatState chat,
+    String appDir,
+  ) {
     final m = messages[i];
     final isLastAssistant =
         m.role == 'assistant' && i == messages.length - 1 && !chat.streaming;
     return MessageBubble(
       key: ValueKey(m.id),
       message: m,
+      appDir: appDir,
       onRegenerate: isLastAssistant
           ? () => ref.read(chatProvider(_id).notifier).regenerate()
           : null,
@@ -221,12 +300,48 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           if (chat.streamingText.isNotEmpty)
             BlockedMarkdown(text: chat.streamingText),
           const SizedBox(height: 4),
-          SizedBox(
+          const SizedBox(
             width: 14,
             height: 14,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _imageChips() {
+    return SizedBox(
+      height: 72,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        itemCount: _pendingImages.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final img = _pendingImages[i];
+          return Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.memory(
+                  img.bytes,
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Positioned(
+                right: -6,
+                top: -6,
+                child: IconButton(
+                  icon: const Icon(Icons.cancel, size: 18),
+                  onPressed: () => setState(() => _pendingImages.removeAt(i)),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -238,6 +353,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+            IconButton(
+              onPressed: streaming ? null : _pickImage,
+              icon: const Icon(Icons.add_photo_alternate_outlined),
+            ),
             Expanded(
               child: TextField(
                 controller: _input,

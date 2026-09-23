@@ -9,7 +9,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'chat.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `auto_title`, `combine_system`, `drive_chat`, `spawn_chat`, `summarize`, `to_dto`
+// These functions are ignored because they are not marked as `pub`: `auto_title`, `build_user_content`, `combine_system`, `drive_chat`, `read_image`, `rebuild_content`, `spawn_chat`, `summarize`, `to_dto`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `fmt`
 
 /// 发送新消息并流式回推（user_text 为 None 时按现有历史重发）。
@@ -17,10 +17,12 @@ Stream<ChatEventDto> chatSend({
   required String chatId,
   required String conversationId,
   String? userText,
+  required List<ImageInput> userImages,
 }) => RustLib.instance.api.crateApiChatChatSend(
   chatId: chatId,
   conversationId: conversationId,
   userText: userText,
+  userImages: userImages,
 );
 
 /// 重新生成：删除最后一条 assistant 消息后重发。
@@ -65,4 +67,29 @@ sealed class ChatEventDto with _$ChatEventDto {
     required String code,
     required String message,
   }) = ChatEventDto_Error;
+}
+
+/// 新消息附带的图片（Dart 侧压缩后传入；file_path 已落盘 files/ 相对路径）。
+class ImageInput {
+  final String mime;
+  final String data;
+  final String filePath;
+
+  const ImageInput({
+    required this.mime,
+    required this.data,
+    required this.filePath,
+  });
+
+  @override
+  int get hashCode => mime.hashCode ^ data.hashCode ^ filePath.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ImageInput &&
+          runtimeType == other.runtimeType &&
+          mime == other.mime &&
+          data == other.data &&
+          filePath == other.filePath;
 }

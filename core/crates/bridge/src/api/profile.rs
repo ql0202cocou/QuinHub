@@ -2,9 +2,15 @@
 //! 明文 Key 只在本层短暂存在（加密后落库），不回传 Dart。
 
 use super::lifecycle::storage;
+use super::BridgeError;
 use anyhow::Context;
 use quinhub_api::build_provider;
 use quinhub_storage::{NewProfile, ProviderProfile};
+
+/// anyhow → 干净字符串（错误链，无 backtrace 噪音）。
+fn clean(e: anyhow::Error) -> BridgeError {
+    BridgeError(format!("{e:#}"))
+}
 
 /// 传给 Dart 的 Profile 视图（不含密钥密文）。
 pub struct ProfileDto {
@@ -35,9 +41,12 @@ pub async fn profile_create(
     base_url: String,
     api_key: String,
     is_default: bool,
-) -> anyhow::Result<ProfileDto> {
-    let encrypted = quinhub_crypto::encrypt(&api_key).context("encrypt key")?;
-    let p = storage()?
+) -> Result<ProfileDto, BridgeError> {
+    let encrypted = quinhub_crypto::encrypt(&api_key)
+        .context("encrypt key")
+        .map_err(clean)?;
+    let p = storage()
+        .map_err(clean)?
         .create_profile(NewProfile {
             name,
             provider_type,
@@ -46,17 +55,28 @@ pub async fn profile_create(
             is_default,
         })
         .await
-        .context("create profile")?;
+        .context("create profile")
+        .map_err(clean)?;
     Ok(to_dto(p))
 }
 
-pub async fn profile_list() -> anyhow::Result<Vec<ProfileDto>> {
-    let rows = storage()?.list_profiles().await.context("list profiles")?;
+pub async fn profile_list() -> Result<Vec<ProfileDto>, BridgeError> {
+    let rows = storage()
+        .map_err(clean)?
+        .list_profiles()
+        .await
+        .context("list profiles")
+        .map_err(clean)?;
     Ok(rows.into_iter().map(to_dto).collect())
 }
 
-pub async fn profile_get(id: String) -> anyhow::Result<ProfileDto> {
-    let p = storage()?.get_profile(&id).await.context("get profile")?;
+pub async fn profile_get(id: String) -> Result<ProfileDto, BridgeError> {
+    let p = storage()
+        .map_err(clean)?
+        .get_profile(&id)
+        .await
+        .context("get profile")
+        .map_err(clean)?;
     Ok(to_dto(p))
 }
 
@@ -68,13 +88,20 @@ pub async fn profile_update(
     api_key: Option<String>,
     is_default: bool,
     enabled_models: Vec<String>,
-) -> anyhow::Result<ProfileDto> {
+) -> Result<ProfileDto, BridgeError> {
     let encrypted = match api_key {
-        Some(k) => Some(quinhub_crypto::encrypt(&k).context("encrypt key")?),
+        Some(k) => Some(
+            quinhub_crypto::encrypt(&k)
+                .context("encrypt key")
+                .map_err(clean)?,
+        ),
         None => None,
     };
-    let models_json = serde_json::to_string(&enabled_models).context("serialize models")?;
-    let p = storage()?
+    let models_json = serde_json::to_string(&enabled_models)
+        .context("serialize models")
+        .map_err(clean)?;
+    let p = storage()
+        .map_err(clean)?
         .update_profile(
             &id,
             &name,
@@ -84,25 +111,37 @@ pub async fn profile_update(
             &models_json,
         )
         .await
-        .context("update profile")?;
+        .context("update profile")
+        .map_err(clean)?;
     Ok(to_dto(p))
 }
 
-pub async fn profile_delete(id: String) -> anyhow::Result<()> {
-    storage()?
+pub async fn profile_delete(id: String) -> Result<(), BridgeError> {
+    storage()
+        .map_err(clean)?
         .delete_profile(&id)
         .await
         .context("delete profile")
+        .map_err(clean)
 }
 
 /// 连通性测试：解密 Key → 构造 Provider → 拉取模型列表。
-pub async fn profile_test(id: String) -> anyhow::Result<Vec<String>> {
-    let p = storage()?.get_profile(&id).await.context("get profile")?;
-    let key = quinhub_crypto::decrypt(&p.encrypted_key).context("decrypt key")?;
-    let provider = build_provider(&p.provider_type, &p.base_url, &key).context("build provider")?;
+pub async fn profile_test(id: String) -> Result<Vec<String>, BridgeError> {
+    let p = storage()
+        .map_err(clean)?
+        .get_profile(&id)
+        .await
+        .context("get profile")
+        .map_err(clean)?;
+    let key = quinhub_crypto::decrypt(&p.encrypted_key)
+        .context("decrypt key")
+        .map_err(clean)?;
+    let provider = build_provider(&p.provider_type, &p.base_url, &key)
+        .context("build provider")
+        .map_err(clean)?;
     let models = provider
         .list_models()
         .await
-        .map_err(|e| anyhow::anyhow!("{e}"))?;
+        .map_err(|e| BridgeError(format!("{e}")))?;
     Ok(models)
 }

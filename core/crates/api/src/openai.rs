@@ -2,7 +2,7 @@
 //! 字段映射见 doc/agents/protocol-mapping.md 第 2 节。
 
 use crate::http::{build_client, map_http_error, normalize_base_url, send_with_retry};
-use crate::{ApiError, ChatEvent, ChatProvider, ChatRequest, ErrorCode, Role};
+use crate::{ApiError, ChatEvent, ChatMessage, ChatProvider, ChatRequest, ErrorCode, Role};
 use async_trait::async_trait;
 use eventsource_stream::Eventsource;
 use futures::stream::{self, BoxStream, StreamExt};
@@ -38,10 +38,7 @@ pub(crate) fn build_request(req: &ChatRequest) -> Value {
         messages.push(json!({"role": "system", "content": sys}));
     }
     for m in &req.messages {
-        messages.push(json!({
-            "role": role_str(m.role),
-            "content": m.content,
-        }));
+        messages.push(message_json(m));
     }
     // stream_options.include_usage：否则流式响应不给 token 用量（protocol-mapping.md）
     let mut body = json!({
@@ -60,6 +57,24 @@ pub(crate) fn build_request(req: &ChatRequest) -> Value {
         body["max_tokens"] = json!(mt);
     }
     body
+}
+
+/// 有图片时 content 转 parts 数组（text + image_url data:base64）。
+fn message_json(m: &ChatMessage) -> Value {
+    if m.images.is_empty() {
+        return json!({"role": role_str(m.role), "content": m.content});
+    }
+    let mut parts: Vec<Value> = Vec::new();
+    if !m.content.is_empty() {
+        parts.push(json!({"type": "text", "text": m.content}));
+    }
+    for img in &m.images {
+        parts.push(json!({
+            "type": "image_url",
+            "image_url": {"url": format!("data:{};base64,{}", img.mime, img.data)},
+        }));
+    }
+    json!({"role": role_str(m.role), "content": parts})
 }
 
 fn role_str(role: Role) -> &'static str {
@@ -209,10 +224,7 @@ mod tests {
     use crate::ChatMessage;
 
     fn msg(role: Role, content: &str) -> ChatMessage {
-        ChatMessage {
-            role,
-            content: content.to_string(),
-        }
+        ChatMessage::text(role, content)
     }
 
     #[test]
@@ -298,5 +310,23 @@ mod tests {
     fn default_base_url_when_empty() {
         let p = OpenAiCompatibleProvider::new("", "k").unwrap();
         assert_eq!(p.base_url, DEFAULT_OPENAI_BASE_URL);
+    }
+
+    #[test]
+    fn request_with_images_uses_parts() {
+        let mut m = msg(Role::User, "看图");
+        m.images.push(crate::ImageData {
+            mime: "image/jpeg".into(),
+            data: "AAAA".into(),
+        });
+        let body = build_request(&ChatRequest {
+            model: "gpt-4o".into(),
+            messages: vec![m],
+            ..Default::default()
+        });
+        let parts = body["messages"][0]["content"].as_array().unwrap();
+        assert_eq!(parts[0]["type"], "text");
+        assert_eq!(parts[1]["type"], "image_url");
+        assert_eq!(parts[1]["image_url"]["url"], "data:image/jpeg;base64,AAAA");
     }
 }

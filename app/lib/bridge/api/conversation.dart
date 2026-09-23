@@ -3,11 +3,12 @@
 
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
+import '../api.dart';
 import '../frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-// These functions are ignored because they are not marked as `pub`: `to_dto`
+// These functions are ignored because they are not marked as `pub`: `clean`, `to_dto`
 
 Future<ConversationDto> conversationCreate({
   String? profileId,

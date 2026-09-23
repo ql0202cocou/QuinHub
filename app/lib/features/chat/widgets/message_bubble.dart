@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:quinhub/bridge/api/message.dart';
@@ -8,12 +10,14 @@ class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
     required this.message,
+    required this.appDir,
     this.onRegenerate,
     this.onEditResend,
     this.onDelete,
   });
 
   final MessageDto message;
+  final String appDir;
   final VoidCallback? onRegenerate;
   final VoidCallback? onEditResend;
   final VoidCallback? onDelete;
@@ -29,7 +33,7 @@ class MessageBubble extends StatelessWidget {
               leading: const Icon(Icons.copy_outlined),
               title: const Text('复制'),
               onTap: () {
-                Clipboard.setData(ClipboardData(text: message.content));
+                Clipboard.setData(ClipboardData(text: message.text));
                 Navigator.pop(ctx);
               },
             ),
@@ -57,13 +61,37 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
+  Widget _images() {
+    if (message.images.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final img in message.images)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.file(
+                File('$appDir/$img'),
+                width: 160,
+                height: 160,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isUser = message.role == 'user';
     final theme = Theme.of(context);
     final errorText = _errorText();
 
-    final content = message.content;
+    final content = message.text;
     final bubble = isUser
         ? Align(
             alignment: Alignment.centerRight,
@@ -74,15 +102,25 @@ class MessageBubble extends StatelessWidget {
                 color: theme.colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: SelectableText(
-                content,
-                style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _images(),
+                  if (content.isNotEmpty)
+                    Text(
+                      content,
+                      style: TextStyle(
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                ],
               ),
             ),
           )
         : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _images(),
               if (content.isNotEmpty) BlockedMarkdown(text: content),
               if (errorText != null)
                 Container(

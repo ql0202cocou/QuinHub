@@ -6,10 +6,7 @@ use quinhub_api::{ChatEvent, ChatMessage, ChatProvider, ChatRequest, EchoProvide
 pub async fn echo_stream(sink: StreamSink<String>, input: String) {
     let req = ChatRequest {
         model: "echo".into(),
-        messages: vec![ChatMessage {
-            role: Role::User,
-            content: input,
-        }],
+        messages: vec![ChatMessage::text(Role::User, input)],
         ..Default::default()
     };
     match EchoProvider.chat_stream(req).await {
@@ -37,4 +34,6 @@ pub async fn echo_stream(sink: StreamSink<String>, input: String) {
 #[flutter_rust_bridge::frb(init)]
 pub fn init_app() {
     flutter_rust_bridge::setup_default_user_utils();
+    // anyhow 的 backtrace 捕获由 RUST_BACKTRACE 控制；关掉避免错误透传到 Dart 带噪音
+    unsafe { std::env::set_var("RUST_BACKTRACE", "0") };
 }
