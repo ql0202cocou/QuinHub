@@ -10,6 +10,7 @@ import 'api/echo.dart';
 import 'api/lifecycle.dart';
 import 'api/message.dart';
 import 'api/profile.dart';
+import 'api/settings.dart';
 
 import 'dart:async';
 import 'dart:convert';

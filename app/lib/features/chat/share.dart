@@ -6,20 +6,26 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:quinhub/bridge/api/message.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:quinhub/l10n/app_localizations.dart';
 
 /// 导出会话为 Markdown 文件并调系统分享。
-Future<void> exportMarkdown(String title, List<MessageDto> messages) async {
-  final buf = StringBuffer('# ${title.isEmpty ? "QuinHub 会话" : title}\n\n');
+Future<void> exportMarkdown(
+  String title,
+  List<MessageDto> messages,
+  AppLocalizations l10n,
+) async {
+  final buf = StringBuffer('# ${title.isEmpty ? l10n.newChat : title}\n\n');
   for (final m in messages) {
     if (m.status != 'done') continue;
     final who = switch (m.role) {
-      'user' => '**用户**',
-      'assistant' => '**助手**${m.model != null ? "（${m.model}）" : ""}',
+      'user' => '**${l10n.user}**',
+      'assistant' =>
+        '**${l10n.assistant}**${m.model != null ? "（${m.model}）" : ""}',
       _ => '**${m.role}**',
     };
     buf.writeln('$who：\n');
     for (var _ in m.images) {
-      buf.writeln('[图片]\n');
+      buf.writeln('${l10n.imageCount(1)}\n');
     }
     buf.writeln(m.text);
     buf.writeln('\n---\n');
@@ -37,6 +43,7 @@ Future<void> shareAsImage(
   BuildContext context,
   String title,
   List<MessageDto> messages,
+  AppLocalizations l10n,
 ) async {
   final messenger = ScaffoldMessenger.of(context);
   final boundaryKey = GlobalKey();
@@ -74,7 +81,7 @@ Future<void> shareAsImage(
       ShareParams(files: [XFile(f.path)], subject: title),
     );
   } catch (e) {
-    messenger.showSnackBar(SnackBar(content: Text('生成分享图失败：$e')));
+    messenger.showSnackBar(SnackBar(content: Text(l10n.shareFailed('$e'))));
   } finally {
     entry.remove();
   }
@@ -89,19 +96,20 @@ class _Transcript extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final done = messages.where((m) => m.status == 'done').toList();
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title.isEmpty ? 'QuinHub 会话' : title,
+          title.isEmpty ? l10n.newChat : title,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
-        const Text(
-          '由 QuinHub 导出',
-          style: TextStyle(color: Colors.grey, fontSize: 12),
+        Text(
+          l10n.exportedBy,
+          style: const TextStyle(color: Colors.grey, fontSize: 12),
         ),
         const Divider(height: 24),
         for (final m in done) ...[
@@ -117,8 +125,8 @@ class _Transcript extends StatelessWidget {
                 ),
                 child: Text(
                   switch (m.role) {
-                    'user' => '用户',
-                    'assistant' => m.model ?? '助手',
+                    'user' => l10n.user,
+                    'assistant' => m.model ?? l10n.assistant,
                     _ => m.role,
                   },
                   style: const TextStyle(
@@ -133,7 +141,7 @@ class _Transcript extends StatelessWidget {
             padding: const EdgeInsets.only(top: 4, bottom: 12),
             child: Text(
               [
-                if (m.images.isNotEmpty) '[图片×${m.images.length}]',
+                if (m.images.isNotEmpty) l10n.imageCount(m.images.length),
                 m.text,
               ].join('\n').trim(),
               style: const TextStyle(fontSize: 14, height: 1.5),

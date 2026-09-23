@@ -4,6 +4,7 @@ import 'package:flutter_highlight/flutter_highlight.dart';
 import 'package:flutter_highlight/themes/atom-one-dark.dart';
 import 'package:flutter_highlight/themes/github.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:quinhub/l10n/app_localizations.dart';
 
 /// Blocked 增量 Markdown（decisions.md 决策三）：
 /// 文本按 block 切分（代码块感知），相同内容的 block 复用同一 widget 实例，
@@ -110,11 +111,13 @@ class _CodeBlock extends StatelessWidget {
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.copy, size: 16),
-                tooltip: '复制',
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: code));
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(const SnackBar(content: Text('已复制代码')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(AppLocalizations.of(context).copiedCode),
+                    ),
+                  );
                 },
               ),
             ],

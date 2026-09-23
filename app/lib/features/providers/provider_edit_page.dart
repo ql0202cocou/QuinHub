@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:quinhub/bridge/api/profile.dart';
 import 'package:quinhub/state/profiles.dart';
+import 'package:quinhub/l10n/app_localizations.dart';
 
 const _defaultBaseUrls = {
   'openai_compatible': 'https://api.openai.com/v1',
@@ -46,6 +47,7 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
   }
 
   Future<void> _load() async {
+    final l10n = AppLocalizations.of(context);
     try {
       final p = await profileGet(id: widget.profileId);
       if (!mounted) return;
@@ -60,7 +62,7 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('加载失败：$e')));
+          .showSnackBar(SnackBar(content: Text(l10n.loadFailed('$e'))));
       setState(() => _loading = false);
     }
   }
@@ -87,6 +89,7 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
@@ -114,13 +117,14 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('保存失败：$e')));
+          .showSnackBar(SnackBar(content: Text(l10n.saveFailed('$e'))));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
   Future<void> _test() async {
+    final l10n = AppLocalizations.of(context);
     setState(() {
       _testing = true;
       _testedModels = null;
@@ -129,20 +133,20 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
       final models = await profileTest(id: widget.profileId);
       if (!mounted) return;
       setState(() => _testedModels = models);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('连接成功，发现 ${models.length} 个模型')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.connectSuccess(models.length))),
+      );
     } catch (e) {
       if (!mounted) return;
       showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('连接失败'),
+          title: Text(l10n.connectFailed),
           content: Text('$e'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('知道了'),
+              child: Text(l10n.acknowledge),
             ),
           ],
         ),
@@ -154,8 +158,11 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(_isNew ? '添加提供商' : '编辑提供商')),
+      appBar: AppBar(
+        title: Text(_isNew ? l10n.addProvider : l10n.editProvider),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Form(
@@ -165,24 +172,25 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
                 children: [
                   TextFormField(
                     controller: _name,
-                    decoration: const InputDecoration(
-                      labelText: '名称',
+                    decoration: InputDecoration(
+                      labelText: l10n.fieldName,
                       border: OutlineInputBorder(),
                     ),
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? '必填' : null,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? l10n.fieldRequired
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _type,
-                    decoration: const InputDecoration(
-                      labelText: '类型',
+                    decoration: InputDecoration(
+                      labelText: l10n.fieldType,
                       border: OutlineInputBorder(),
                     ),
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                         value: 'openai_compatible',
-                        child: Text('OpenAI 兼容接口'),
+                        child: Text(l10n.openaiCompatible),
                       ),
                       DropdownMenuItem(
                         value: 'anthropic',
@@ -194,29 +202,33 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _baseUrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Base URL',
+                    decoration: InputDecoration(
+                      labelText: l10n.fieldBaseUrl,
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.url,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? '必填' : null,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? l10n.fieldRequired
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _apiKey,
                     decoration: InputDecoration(
-                      labelText: _isNew ? 'API Key' : 'API Key（留空则不修改）',
+                      labelText: _isNew
+                          ? l10n.fieldApiKey
+                          : l10n.apiKeyKeepUnchanged,
                       border: const OutlineInputBorder(),
                     ),
                     obscureText: true,
                     enableSuggestions: false,
                     autocorrect: false,
-                    validator: (v) =>
-                        _isNew && (v == null || v.isEmpty) ? '必填' : null,
+                    validator: (v) => _isNew && (v == null || v.isEmpty)
+                        ? l10n.fieldRequired
+                        : null,
                   ),
                   SwitchListTile(
-                    title: const Text('设为默认'),
+                    title: Text(l10n.setDefault),
                     value: _isDefault,
                     onChanged: (v) => setState(() => _isDefault = v),
                   ),
@@ -237,7 +249,9 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
                                   ),
                                 )
                               : const Icon(Icons.wifi_tethering),
-                          label: Text(_isNew ? '保存后可测试连接' : '测试连接'),
+                          label: Text(
+                            _isNew ? l10n.saveBeforeTest : l10n.testConnection,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -245,7 +259,7 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
                         child: FilledButton.icon(
                           onPressed: (_saving || _testing) ? null : _save,
                           icon: const Icon(Icons.check),
-                          label: Text(_saving ? '保存中…' : '保存'),
+                          label: Text(_saving ? l10n.saving : l10n.save),
                         ),
                       ),
                     ],
@@ -253,7 +267,7 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
                   if (_testedModels != null) ...[
                     const SizedBox(height: 16),
                     Text(
-                      '启用模型（勾选后保存生效）',
+                      l10n.enableModelsHint,
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 4),

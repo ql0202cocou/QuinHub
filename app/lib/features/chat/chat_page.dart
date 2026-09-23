@@ -18,6 +18,7 @@ import 'package:quinhub/state/conversations.dart';
 import 'package:quinhub/state/core.dart';
 import 'package:quinhub/state/profiles.dart';
 import 'package:uuid/uuid.dart';
+import 'package:quinhub/l10n/app_localizations.dart';
 
 /// 聊天页：消息列表 + 流式渲染 + 输入栏（含图片）+ 模型切换 + 长按消息菜单。
 class ChatPage extends ConsumerStatefulWidget {
@@ -81,6 +82,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _pickImage() async {
+    final l10n = AppLocalizations.of(context);
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -89,12 +91,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('相册'),
+              title: Text(l10n.gallery),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('拍照'),
+              title: Text(l10n.camera),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
           ],
@@ -116,11 +118,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _editResend(MessageDto m) async {
+    final l10n = AppLocalizations.of(context);
     final controller = TextEditingController(text: m.text);
     final text = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('编辑并重发'),
+        title: Text(l10n.editResend),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -130,11 +133,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('发送'),
+            child: Text(l10n.send),
           ),
         ],
       ),
@@ -142,6 +145,34 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     if (text != null && text.isNotEmpty) {
       await ref.read(chatProvider(_id).notifier).editResend(m.id, text);
     }
+  }
+
+  void _showUsage(AppLocalizations l10n) {
+    final msgs = ref.read(chatProvider(_id)).valueOrNull?.messages ?? [];
+    final done = msgs.where((m) => m.role == 'assistant' && m.status == 'done');
+    final inSum = done.fold<int>(0, (a, m) => a + (m.tokensIn?.toInt() ?? 0));
+    final outSum = done.fold<int>(0, (a, m) => a + (m.tokensOut?.toInt() ?? 0));
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.usageStats),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.usageMessages(msgs.length)),
+            Text(l10n.usageTokensIn(inSum)),
+            Text(l10n.usageTokensOut(outSum)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.acknowledge),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pickModel(ConversationDto conv) async {
@@ -187,6 +218,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final convAsync = ref.watch(conversationProvider(_id));
     final chatAsync = ref.watch(chatProvider(_id));
     final chat = chatAsync.valueOrNull;
@@ -198,32 +230,34 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     return Scaffold(
       appBar: AppBar(
         title: convAsync.when(
-          data: (c) => Text(c.title.isEmpty ? '新会话' : c.title),
+          data: (c) => Text(c.title.isEmpty ? l10n.newChat : c.title),
           loading: () => const Text('…'),
-          error: (_, _) => const Text('会话'),
+          error: (_, _) => Text(l10n.conversation),
         ),
         actions: [
           convAsync.maybeWhen(
             data: (c) => TextButton(
               onPressed: () => _pickModel(c),
               child: Text(
-                c.modelId ?? '选模型',
+                c.modelId ?? l10n.selectModel,
                 style: const TextStyle(fontSize: 12),
               ),
             ),
             orElse: () => const SizedBox.shrink(),
           ),
           PopupMenuButton<String>(
-            tooltip: '更多',
+            tooltip: l10n.more,
             onSelected: (v) {
               final msgs = chatAsync.valueOrNull?.messages ?? [];
               final title = convAsync.valueOrNull?.title ?? '';
-              if (v == 'md') exportMarkdown(title, msgs);
-              if (v == 'img') shareAsImage(context, title, msgs);
+              if (v == 'md') exportMarkdown(title, msgs, l10n);
+              if (v == 'img') shareAsImage(context, title, msgs, l10n);
+              if (v == 'usage') _showUsage(l10n);
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'md', child: Text('导出 Markdown')),
-              PopupMenuItem(value: 'img', child: Text('分享长图')),
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'md', child: Text(l10n.exportMarkdown)),
+              PopupMenuItem(value: 'img', child: Text(l10n.shareImage)),
+              PopupMenuItem(value: 'usage', child: Text(l10n.usageStats)),
             ],
           ),
         ],
@@ -233,7 +267,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           Expanded(
             child: chatAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('加载失败：$e')),
+              error: (e, _) => Center(child: Text(l10n.loadFailed('$e'))),
               data: (_) {
                 final messages = chat!.messages;
                 return ListView(
@@ -347,6 +381,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Widget _inputBar(bool streaming) {
+    final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
@@ -362,8 +397,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 controller: _input,
                 maxLines: null,
                 textInputAction: TextInputAction.newline,
-                decoration: const InputDecoration(
-                  hintText: '输入消息…',
+                decoration: InputDecoration(
+                  hintText: l10n.inputHint,
                   border: OutlineInputBorder(),
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(

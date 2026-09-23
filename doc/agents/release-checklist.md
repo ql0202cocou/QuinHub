@@ -3,17 +3,28 @@
 版本：v0.1（骨架，M5 逐项落实）
 
 ## 1. Android 发布
-- [ ] 生成 release keystore（单独安全保管，不进仓库；CI 用 secrets 注入）
+- [x] ~~生成 release keystore~~ → **待用户本人执行**（见下），不进仓库
 - [ ] 配置 `key.properties`（本地）/ CI signing
-- [ ] 产出 AAB（Google Play）+ APK（直接分发）
-- [ ] targetSdk 满足 Google Play 当年要求
-- [ ] 应用图标（自适应图标）与启动屏
+- [x] 产出 AAB（Google Play）+ APK（直接分发）——M5b 已跑通 release APK（debug 签名占位）
+- [x] targetSdk 满足 Google Play 当年要求（36）
+- [x] 应用图标（自适应图标）与启动屏 —— M5b 完成（v0.1 占位图标，tools/gen_icon.py 可换设计稿重新生成）
 - [ ] 若面向中国大陆安卓市场：**App 备案**（工信部）与各商店开发者资质
+
+### 签名操作指引（用户本人执行）
+```bash
+# 1. 生成 keystore（密码自行保管，文件不要提交 git）
+keytool -genkey -v -keystore ~/quinhub-release.keystore -keyalg RSA -keysize 2048 -validity 10000 -alias quinhub
+
+# 2. 创建 app/android/key.properties（gitignore 已排除）：
+#    storePassword=<密码> / keyPassword=<密码> / keyAlias=quinhub / storeFile=<keystore 绝对路径>
+
+# 3. android/app/build.gradle.kts 的 release 块改读 keyProperties（模板注释已有 TODO）
+```
 
 ## 2. iOS 发布
 - [ ] Apple Developer 账号（$99/年）
 - [ ] 证书与描述文件管理（CI 建议 App Store Connect API Key 或 fastlane match）
-- [ ] macOS 构建通道（本地 Mac 或 CI macOS runner）
+- [ ] macOS 构建通道（本地 Mac 或 CI macOS runner）——CI job 骨架已备（注释态）
 - [ ] App Store Connect 应用信息、分级问卷
 
 ## 3. 合规与隐私（AI 应用必做）

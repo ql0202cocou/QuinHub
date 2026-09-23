@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:quinhub/bridge/api/profile.dart';
 import 'package:quinhub/state/profiles.dart';
+import 'package:quinhub/l10n/app_localizations.dart';
 
 String providerTypeLabel(String type) => switch (type) {
   'openai_compatible' => 'OpenAI 兼容',
@@ -19,19 +20,20 @@ class ProvidersPage extends ConsumerWidget {
     WidgetRef ref,
     ProfileDto p,
   ) async {
+    final l10n = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('删除「${p.name}」？'),
-        content: const Text('关联会话将保留，但无法继续对话。'),
+        title: Text(l10n.deleteProviderTitle(p.name)),
+        content: Text(l10n.deleteProviderContent),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('删除'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -43,14 +45,15 @@ class ProvidersPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final profiles = ref.watch(profilesProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('模型提供商')),
+      appBar: AppBar(title: Text(l10n.providers)),
       body: profiles.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('加载失败：$e')),
+        error: (e, _) => Center(child: Text(l10n.loadFailed('$e'))),
         data: (list) => list.isEmpty
-            ? const Center(child: Text('还没有提供商，点右下角添加'))
+            ? Center(child: Text(l10n.noProviders))
             : ListView.separated(
                 itemCount: list.length,
                 separatorBuilder: (_, _) => const Divider(height: 1),
@@ -82,9 +85,12 @@ class ProvidersPage extends ConsumerWidget {
                           _confirmDelete(context, ref, p);
                         }
                       },
-                      itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'edit', child: Text('编辑')),
-                        PopupMenuItem(value: 'delete', child: Text('删除')),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(value: 'edit', child: Text(l10n.edit)),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(l10n.delete),
+                        ),
                       ],
                     ),
                     onTap: () => context.push('/settings/providers/${p.id}'),

@@ -5,6 +5,7 @@ import 'package:quinhub/bridge/api/conversation.dart';
 import 'package:quinhub/state/conversations.dart';
 import 'package:quinhub/state/core.dart';
 import 'package:quinhub/state/profiles.dart';
+import 'package:quinhub/l10n/app_localizations.dart';
 
 /// 会话列表首页。
 class HomePage extends ConsumerWidget {
@@ -20,10 +21,11 @@ class HomePage extends ConsumerWidget {
   }
 
   Future<void> _newConversation(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final profiles = ref.read(profilesProvider).valueOrNull ?? [];
     if (profiles.isEmpty) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('先去设置里添加一个模型提供商')));
+          .showSnackBar(SnackBar(content: Text(l10n.addProviderFirst)));
       context.push('/settings/providers');
       return;
     }
@@ -31,7 +33,7 @@ class HomePage extends ConsumerWidget {
         profiles.where((p) => p.isDefault).firstOrNull ?? profiles.first;
     if (profile.enabledModels.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('「${profile.name}」还没启用模型，点编辑测试并勾选')),
+        SnackBar(content: Text(l10n.noEnabledModels(profile.name))),
       );
       return;
     }
@@ -47,10 +49,11 @@ class HomePage extends ConsumerWidget {
     ConversationDto c,
   ) async {
     final controller = TextEditingController(text: c.title);
+    final l10n = AppLocalizations.of(context);
     final title = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('重命名会话'),
+        title: Text(l10n.renameConversation),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -59,11 +62,11 @@ class HomePage extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('保存'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -74,6 +77,7 @@ class HomePage extends ConsumerWidget {
   }
 
   void _menu(BuildContext context, WidgetRef ref, ConversationDto c) {
+    final l10n = AppLocalizations.of(context);
     showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -84,7 +88,7 @@ class HomePage extends ConsumerWidget {
               leading: Icon(
                 c.pinned ? Icons.push_pin : Icons.push_pin_outlined,
               ),
-              title: Text(c.pinned ? '取消置顶' : '置顶'),
+              title: Text(c.pinned ? l10n.unpin : l10n.pin),
               onTap: () {
                 Navigator.pop(ctx);
                 ref
@@ -94,7 +98,7 @@ class HomePage extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.drive_file_rename_outline),
-              title: const Text('重命名'),
+              title: Text(l10n.rename),
               onTap: () {
                 Navigator.pop(ctx);
                 _rename(context, ref, c);
@@ -102,22 +106,26 @@ class HomePage extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('删除', style: TextStyle(color: Colors.red)),
+              title: Text(l10n.delete, style: TextStyle(color: Colors.red)),
               onTap: () async {
                 Navigator.pop(ctx);
                 final ok = await showDialog<bool>(
                   context: context,
                   builder: (dctx) => AlertDialog(
-                    title: Text('删除「${c.title.isEmpty ? '未命名会话' : c.title}」？'),
-                    content: const Text('会话内消息将一并删除。'),
+                    title: Text(
+                      l10n.deleteConversationTitle(
+                        c.title.isEmpty ? l10n.unnamedConversation : c.title,
+                      ),
+                    ),
+                    content: Text(l10n.deleteConversationContent),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(dctx, false),
-                        child: const Text('取消'),
+                        child: Text(l10n.cancel),
                       ),
                       FilledButton(
                         onPressed: () => Navigator.pop(dctx, true),
-                        child: const Text('删除'),
+                        child: Text(l10n.delete),
                       ),
                     ],
                   ),
@@ -135,6 +143,7 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final core = ref.watch(coreInitProvider);
     final convs = ref.watch(conversationsProvider);
     final profiles = ref.watch(profilesProvider);
@@ -154,11 +163,11 @@ class HomePage extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('初始化失败：$e', textAlign: TextAlign.center),
+              Text(l10n.initFailed('$e'), textAlign: TextAlign.center),
               const SizedBox(height: 12),
               FilledButton(
                 onPressed: () => ref.invalidate(coreInitProvider),
-                child: const Text('重试'),
+                child: Text(l10n.retry),
               ),
             ],
           ),
@@ -171,12 +180,12 @@ class HomePage extends ConsumerWidget {
                 children: [
                   const Icon(Icons.key_outlined, size: 56),
                   const SizedBox(height: 12),
-                  const Text('先添加一个模型提供商（API Key）开始对话'),
+                  Text(l10n.noProvidersGuide),
                   const SizedBox(height: 16),
                   FilledButton.icon(
                     onPressed: () => context.push('/settings/providers'),
                     icon: const Icon(Icons.add),
-                    label: const Text('配置提供商'),
+                    label: Text(l10n.configureProviders),
                   ),
                 ],
               ),
@@ -184,7 +193,7 @@ class HomePage extends ConsumerWidget {
           }
           final list = convs.valueOrNull ?? [];
           if (list.isEmpty) {
-            return const Center(child: Text('还没有会话，点右下角开始'));
+            return Center(child: Text(l10n.noConversations));
           }
           return ListView.separated(
             itemCount: list.length,
@@ -196,11 +205,11 @@ class HomePage extends ConsumerWidget {
                     ? const Icon(Icons.push_pin, size: 18)
                     : const Icon(Icons.chat_bubble_outline, size: 18),
                 title: Text(
-                  c.title.isEmpty ? '未命名会话' : c.title,
+                  c.title.isEmpty ? l10n.unnamedConversation : c.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                subtitle: Text(c.modelId ?? '未选模型'),
+                subtitle: Text(c.modelId ?? l10n.unnamedConversation),
                 trailing: Text(
                   _fmtTime(c.updatedAt.toInt()),
                   style: Theme.of(context).textTheme.bodySmall,

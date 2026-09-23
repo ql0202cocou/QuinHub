@@ -4,6 +4,7 @@ pub mod echo;
 pub mod lifecycle;
 pub mod message;
 pub mod profile;
+pub mod settings;
 
 /// 桥接错误：Display 只含错误链（无 backtrace 噪音，M5a 降噪）。
 #[derive(Debug)]

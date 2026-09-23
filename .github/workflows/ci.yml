@@ -34,18 +34,30 @@ jobs:
       - name: analyze + test
         run: cd app && flutter pub get && flutter analyze && flutter test
 
-  # build-android：M1 接入 frb 后启用（需 cargo-ndk + Rust Android targets）
-  # build-android:
-  #   runs-on: ubuntu-latest
+  # frb 生成物已提交入库（engineering.md 第 3 节），CI 无需 codegen；
+  # cargokit 会自动安装所需 NDK（M1 实测）。
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: build debug apk
+        run: cd app && flutter pub get && flutter build apk --debug
+
+  # build-ios：macOS runner（暂无签名证书，先验证工具链；签名见 release-checklist.md）
+  # build-ios:
+  #   runs-on: macos-latest
   #   steps:
   #     - uses: actions/checkout@v4
-  #     - uses: dtolnay/rust-toolchain@stable
-  #       with:
-  #         targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
   #     - uses: subosito/flutter-action@v2
   #       with:
   #         channel: stable
-  #     - run: cargo install cargo-ndk
-  #     - run: cd app && flutter pub get && flutter build apk --debug
-
-  # build-ios：M5 前打通（macos runner + xcframework 打包）
+  #     - uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         targets: aarch64-apple-ios, aarch64-apple-ios-sim
+  #     - run: cd app && flutter pub get && flutter build ios --no-codesign

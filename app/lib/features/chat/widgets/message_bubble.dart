@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:quinhub/bridge/api/message.dart';
 import 'package:quinhub/features/chat/widgets/markdown_view.dart';
+import 'package:quinhub/l10n/app_localizations.dart';
 
 /// 消息气泡（LobeHub 风格接近全宽）：user 浅色块靠右，assistant 全宽 Markdown。
 class MessageBubble extends StatelessWidget {
@@ -23,6 +24,7 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback? onDelete;
 
   void _menu(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => SafeArea(
@@ -31,7 +33,7 @@ class MessageBubble extends StatelessWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.copy_outlined),
-              title: const Text('复制'),
+              title: Text(l10n.copy),
               onTap: () {
                 Clipboard.setData(ClipboardData(text: message.text));
                 Navigator.pop(ctx);
@@ -40,7 +42,7 @@ class MessageBubble extends StatelessWidget {
             if (onRegenerate != null)
               ListTile(
                 leading: const Icon(Icons.refresh),
-                title: const Text('重新生成'),
+                title: Text(l10n.regenerate),
                 onTap: () {
                   Navigator.pop(ctx);
                   onRegenerate!();
@@ -49,7 +51,7 @@ class MessageBubble extends StatelessWidget {
             if (onEditResend != null)
               ListTile(
                 leading: const Icon(Icons.edit_outlined),
-                title: const Text('编辑并重发'),
+                title: Text(l10n.editResend),
                 onTap: () {
                   Navigator.pop(ctx);
                   onEditResend!();
@@ -87,9 +89,10 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isUser = message.role == 'user';
     final theme = Theme.of(context);
-    final errorText = _errorText();
+    final errorText = _errorText(l10n);
 
     final content = message.text;
     final bubble = isUser
@@ -152,7 +155,7 @@ class MessageBubble extends StatelessWidget {
                 ),
               if (message.status == 'cancelled')
                 Text(
-                  '已取消',
+                  l10n.cancelled,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.hintColor,
                   ),
@@ -188,10 +191,10 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  String? _errorText() {
+  String? _errorText(AppLocalizations l10n) {
     if (message.status != 'error') return null;
     final raw = message.error;
-    if (raw == null) return '未知错误';
+    if (raw == null) return l10n.unknownError;
     // error 为 JSON {"code","message"}（bridge 落库格式）
     try {
       final m = RegExp(r'"message"\s*:\s*"((?:[^"\\]|\\.)*)"').firstMatch(raw);

@@ -10,6 +10,7 @@ import 'api/echo.dart';
 import 'api/lifecycle.dart';
 import 'api/message.dart';
 import 'api/profile.dart';
+import 'api/settings.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -75,7 +76,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -1003670145;
+  int get rustContentHash => -328571340;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -173,6 +174,13 @@ abstract class RustLibApi extends BaseApi {
     String? apiKey,
     required bool isDefault,
     required List<String> enabledModels,
+  });
+
+  Future<String?> crateApiSettingsSettingsGet({required String key});
+
+  Future<void> crateApiSettingsSettingsSet({
+    required String key,
+    required String value,
   });
 }
 
@@ -891,6 +899,69 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           "isDefault",
           "enabledModels",
         ],
+      );
+
+  @override
+  Future<String?> crateApiSettingsSettingsGet({required String key}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(key, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 22,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_String,
+          decodeErrorData: sse_decode_bridge_error,
+        ),
+        constMeta: kCrateApiSettingsSettingsGetConstMeta,
+        argValues: [key],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSettingsSettingsGetConstMeta =>
+      const TaskConstMeta(debugName: "settings_get", argNames: ["key"]);
+
+  @override
+  Future<void> crateApiSettingsSettingsSet({
+    required String key,
+    required String value,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(key, serializer);
+          sse_encode_String(value, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 23,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_bridge_error,
+        ),
+        constMeta: kCrateApiSettingsSettingsSetConstMeta,
+        argValues: [key, value],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSettingsSettingsSetConstMeta =>
+      const TaskConstMeta(
+        debugName: "settings_set",
+        argNames: ["key", "value"],
       );
 
   @protected

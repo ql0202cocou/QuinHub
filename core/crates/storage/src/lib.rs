@@ -546,3 +546,48 @@ mod conv_tests {
         assert!(s.get_conversation(&c2.id).await.is_err());
     }
 }
+
+// ==================== Settings KV（M5b） ====================
+
+impl Storage {
+    pub async fn get_setting(&self, key: &str) -> Result<Option<String>, StorageError> {
+        let row: Option<(String,)> = sqlx::query_as("SELECT value FROM settings WHERE key = ?")
+            .bind(key)
+            .fetch_optional(&self.pool)
+            .await?;
+        Ok(row.map(|r| r.0))
+    }
+
+    pub async fn set_setting(&self, key: &str, value: &str) -> Result<(), StorageError> {
+        sqlx::query(
+            "INSERT INTO settings (key, value) VALUES (?, ?)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        )
+        .bind(key)
+        .bind(value)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod settings_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn settings_kv_roundtrip() {
+        let s = Storage::init_memory().await.unwrap();
+        assert_eq!(s.get_setting("theme").await.unwrap(), None);
+        s.set_setting("theme", "dark").await.unwrap();
+        assert_eq!(
+            s.get_setting("theme").await.unwrap().as_deref(),
+            Some("dark")
+        );
+        s.set_setting("theme", "light").await.unwrap();
+        assert_eq!(
+            s.get_setting("theme").await.unwrap().as_deref(),
+            Some("light")
+        );
+    }
+}
