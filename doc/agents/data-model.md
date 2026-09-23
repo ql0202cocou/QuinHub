@@ -58,6 +58,10 @@ CREATE TABLE conversation (
   rev          INTEGER NOT NULL DEFAULT 1
 );
 
+-- 0002_conversation_profile.sql（M4 追加）：
+-- ALTER TABLE conversation ADD COLUMN profile_id TEXT REFERENCES provider_profile(id);
+-- 会话关联提供商（模型属于哪个 profile 的 Key）；旧行为 NULL。
+
 CREATE TABLE message (
   id              TEXT PRIMARY KEY,
   conversation_id TEXT NOT NULL REFERENCES conversation(id),

@@ -24,4 +24,23 @@ QuinHub/
 
 ## 快速开始
 
-待 M1 脚手架完成后补充（Flutter fvm 版本、Rust toolchain、frb codegen、运行命令）。
+环境组件与安装细节（WSL 全量记录，含踩坑）见 `doc/agents/2026-09-23-m1-setup-notes.md`。
+
+```bash
+# 环境变量（每个新 shell；Makefile 已内置 JAVA_HOME / CARGO_TARGET_DIR）
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+
+# 测试与静态检查
+make rust-test          # cargo test --workspace（13 个套件）
+make flutter-test       # flutter analyze + test
+make fmt                # cargo fmt + dart format
+
+# 改了 core/crates/bridge/src/api/ 后必须重新生成桥接代码并提交生成物
+make frb-codegen
+
+# 构建 / 运行（Android 模拟器 adb 桥接配置见 M1 交接笔记）
+make build-android      # debug APK
+# 真 Key 联调：App 内 设置 → 模型提供商 → 添加；或 mock 链路见 M4 交接笔记
+```
+
+**改代码前必读**：`AGENTS.md`（红线）→ `doc/README.md`（文档索引）。

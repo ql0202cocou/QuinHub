@@ -21,19 +21,23 @@ QuinHub：LobeHub 风格移动端 AI 聊天客户端（iOS / Android）。Flutte
 
 ## 常用命令
 
-M1 后校准，以下为约定目标：
+以下均已在真机/CI 验证（与 Makefile 一致）：
 
 ```bash
 # Rust
 cargo test --workspace          # 单测（含 SSE 样本回放）
 cargo fmt --check && cargo clippy --workspace -- -D warnings
 
-# Flutter（先 fvm use）
+# Flutter（先 fvm use；PATH 需含 ~/.local/bin）
 fvm flutter analyze && fvm flutter test
+fvm flutter gen-l10n            # 改 ARB 后重跑
 dart run build_runner build -d  # riverpod/freezed 生成物（不提交）
 
 # 桥接代码（改 Rust bridge 后必须执行并提交生成物）
-just frb-codegen   # 或 make frb-codegen，以 M1 实际脚本为准
+make frb-codegen
+
+# 环境变量约定（WSL）：JAVA_HOME / CARGO_TARGET_DIR / adb 桥接
+# 见 doc/agents/2026-09-23-m1-setup-notes.md
 ```
 
 ## 红线
