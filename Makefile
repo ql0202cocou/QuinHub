@@ -2,8 +2,14 @@
 # 约定见 doc/agents/engineering.md
 
 FVM ?= fvm
+
+# CARGO_TARGET_DIR 是 WSL（/mnt/d 慢盘）的绕法，macOS 用默认 target/
+ifeq ($(shell uname),Darwin)
+export JAVA_HOME ?= $(shell /usr/libexec/java_home -v 17)
+else
 export JAVA_HOME ?= $(HOME)/.jdk/temurin-17
 export CARGO_TARGET_DIR ?= $(HOME)/cargo-targets/quinhub
+endif
 
 .PHONY: rust-test rust-lint flutter-test frb-codegen build-android fmt
 

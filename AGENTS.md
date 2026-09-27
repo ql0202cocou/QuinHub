@@ -36,8 +36,9 @@ dart run build_runner build -d  # riverpod/freezed 生成物（不提交）
 # 桥接代码（改 Rust bridge 后必须执行并提交生成物）
 make frb-codegen
 
-# 环境变量约定（WSL）：JAVA_HOME / CARGO_TARGET_DIR / adb 桥接
-# 见 doc/agents/2026-09-23-m1-setup-notes.md
+# 环境变量：macOS 已写入 ~/.zshrc（JAVA_HOME / ANDROID_HOME / DEVELOPER_DIR），
+# 见 doc/agents/2026-09-27-macos-setup-notes.md
+# WSL 旧约定（CARGO_TARGET_DIR / adb 桥接）见 doc/agents/2026-09-23-m1-setup-notes.md
 ```
 
 ## 红线
