@@ -36,7 +36,7 @@ QuinHub 第一期「对话核心」已完成并真机（Android 模拟器）实�
 7. 流式「停止」按钮真机点测（watch 信号取消，代码审过未点过）。
 
 ### P2 — 平台与发布
-8. **iOS 构建**：全程未编译过 iOS。需要 macOS（本地或 CI runner，ci.yml 里有注释态 build-ios 骨架）。iOS 特有风险：cargokit pod 集成、照片权限描述（NSPhotoLibraryUsageDescription，用 image_picker 必须加，否则上架被拒）。
+8. ~~**iOS 构建**~~ ✅ 模拟器链路已打通（2026-09-27，macOS）：`flutter build ios --simulator` 构建 + iPhone 17 模拟器运行通过；Podfile/pod 集成产物与 Info.plist 照片/相机权限描述已补齐，详见 [2026-09-27-macos-setup-notes.md](2026-09-27-macos-setup-notes.md)。剩余：真机签名 / IPA（需开发者账号）、CI build-ios 骨架启用。
 9. 正式签名 keystore（用户本人，指引在 release-checklist.md）。
 10. 崩溃收集决策（默认不接；接则在隐私政策声明）。
 

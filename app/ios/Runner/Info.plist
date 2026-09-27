@@ -26,6 +26,10 @@
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
+		<key>NSCameraUsageDescription</key>
+		<string>QuinHub needs camera access to take photos and send them in chats.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>QuinHub needs photo library access to pick images and send them in chats.</string>
 		<key>UIApplicationSceneManifest</key>
 		<dict>
 			<key>UIApplicationSupportsMultipleScenes</key>
