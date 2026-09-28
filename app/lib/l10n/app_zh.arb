@@ -87,5 +87,17 @@
   "send": "发送",
   "conversation": "会话",
   "user": "用户",
-  "assistant": "助手"
+  "assistant": "助手",
+  "archive": "归档",
+  "unarchive": "取消归档",
+  "archivedConversations": "已归档会话",
+  "noArchivedConversations": "没有已归档会话",
+  "defaultModel": "默认模型",
+  "defaultModelUnset": "未设置（跟随默认提供商）",
+  "conversationParams": "会话参数",
+  "maxTokens": "最大 Tokens",
+  "maxTokensHint": "留空使用默认（4096）",
+  "systemPrompt": "系统提示词",
+  "resetToDefault": "重置为默认",
+  "modelNoVision": "当前模型不支持图片输入"
 }

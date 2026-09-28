@@ -25,3 +25,12 @@ final profilesProvider =
     AsyncNotifierProvider<ProfilesNotifier, List<ProfileDto>>(
       ProfilesNotifier.new,
     );
+
+/// 模型是否支持图片输入（Rust 侧启发式，供 UI gating 图片入口）。
+final modelVisionProvider = FutureProvider.family<bool, String?>((
+  ref,
+  modelId,
+) async {
+  if (modelId == null || modelId.isEmpty) return false;
+  return modelSupportsVision(modelId: modelId);
+});

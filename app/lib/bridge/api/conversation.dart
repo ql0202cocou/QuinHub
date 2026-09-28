@@ -21,6 +21,18 @@ Future<ConversationDto> conversationCreate({
 Future<List<ConversationDto>> conversationList() =>
     RustLib.instance.api.crateApiConversationConversationList();
 
+Future<List<ConversationDto>> conversationArchivedList() =>
+    RustLib.instance.api.crateApiConversationConversationArchivedList();
+
+/// params 必须是 JSON 对象字符串（如 {"temperature":0.7}）；"{}" 表示恢复默认。
+Future<ConversationDto> conversationUpdateParams({
+  required String id,
+  required String params,
+}) => RustLib.instance.api.crateApiConversationConversationUpdateParams(
+  id: id,
+  params: params,
+);
+
 Future<ConversationDto> conversationGet({required String id}) =>
     RustLib.instance.api.crateApiConversationConversationGet(id: id);
 

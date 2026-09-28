@@ -23,11 +23,11 @@ QuinHub 第一期「对话核心」已完成并真机（Android 模拟器）实�
 ## Backlog（第一期缺口，按优先级）
 
 ### P0 — 功能缺口（方案承诺过）
-1. **会话参数编辑 UI**：聊天页加参数入口（temperature / top_p / max_tokens / system_prompt）。
-   现状：`conversation.params` JSON 存取、Rust 读取、ContextManager 预算全就绪，只差编辑界面与 `conversation_update_params` 桥接（storage 需加 update params 方法 + UI 弹层）。
-2. **会话归档入口**：会话菜单加「归档/取消归档」+ 归档列表查看处。
-   现状：`update_conversation_meta(archived)` 桥接已就绪，只缺 UI。
-3. **全局默认模型**：设置页加「默认模型」项（settings 表 KV 已就绪），新建会话时优先用它。
+1. ~~**会话参数编辑 UI**~~ ✅（2026-09-28）：聊天页更多菜单 → 会话参数弹层（temperature/top_p/max_tokens/system_prompt 滑杆与输入框），`conversation_update_params` 桥接整体写回 params JSON，「重置为默认」写 `{}`。
+2. ~~**会话归档入口**~~ ✅（2026-09-28）：会话列表长按菜单「归档」；设置 → 已归档会话页（`conversation_archived_list`），长按取消归档/删除，点按可进会话查看。
+3. ~~**全局默认模型**~~ ✅（2026-09-28）：设置页「默认模型」选择器（settings KV `default_model`），新建会话优先取用，失效回落默认提供商首模型。
+
+另：plan.md 里记的 **vision gating** 缺口同日补齐——`quinhub_api::model_supports_vision` 启发式（BYOK 拿不到官方 capabilities，按 model id 模式匹配），非视觉模型禁用聊天页图片按钮并给 tooltip。
 
 ### P1 — 真实验收（需要用户资产）
 4. 真 Key 各跑 ≥3 轮：OpenAI 兼容 + Anthropic（错误路径已实测，成功路径只过过 mock）。

@@ -145,3 +145,8 @@ pub async fn profile_test(id: String) -> Result<Vec<String>, BridgeError> {
         .map_err(|e| BridgeError(format!("{e}")))?;
     Ok(models)
 }
+
+/// 模型是否支持图片输入（api 侧启发式，供 UI gating 图片入口）。
+pub async fn model_supports_vision(model_id: String) -> bool {
+    quinhub_api::model_supports_vision(&model_id)
+}

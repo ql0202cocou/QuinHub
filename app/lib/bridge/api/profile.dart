@@ -54,6 +54,10 @@ Future<void> profileDelete({required String id}) =>
 Future<List<String>> profileTest({required String id}) =>
     RustLib.instance.api.crateApiProfileProfileTest(id: id);
 
+/// 模型是否支持图片输入（api 侧启发式，供 UI gating 图片入口）。
+Future<bool> modelSupportsVision({required String modelId}) =>
+    RustLib.instance.api.crateApiProfileModelSupportsVision(modelId: modelId);
+
 /// 传给 Dart 的 Profile 视图（不含密钥密文）。
 class ProfileDto {
   final String id;

@@ -4,6 +4,7 @@ import 'package:quinhub/features/chat/chat_page.dart';
 import 'package:quinhub/features/home/home_page.dart';
 import 'package:quinhub/features/providers/provider_edit_page.dart';
 import 'package:quinhub/features/providers/providers_page.dart';
+import 'package:quinhub/features/settings/archived_page.dart';
 import 'package:quinhub/features/settings/settings_page.dart';
 
 /// 路由表与 doc/agents/pages-and-routing.md 一致。
@@ -17,6 +18,10 @@ final routerProvider = Provider<GoRouter>(
             ChatPage(conversationId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
+      GoRoute(
+        path: '/settings/archived',
+        builder: (_, _) => const ArchivedPage(),
+      ),
       GoRoute(
         path: '/settings/providers',
         builder: (_, _) => const ProvidersPage(),

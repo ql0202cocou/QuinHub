@@ -56,6 +56,36 @@ pub async fn conversation_list() -> Result<Vec<ConversationDto>, BridgeError> {
     Ok(rows.into_iter().map(to_dto).collect())
 }
 
+pub async fn conversation_archived_list() -> Result<Vec<ConversationDto>, BridgeError> {
+    let rows = storage()
+        .map_err(clean)?
+        .list_archived_conversations()
+        .await
+        .context("list archived conversations")
+        .map_err(clean)?;
+    Ok(rows.into_iter().map(to_dto).collect())
+}
+
+/// params 必须是 JSON 对象字符串（如 {"temperature":0.7}）；"{}" 表示恢复默认。
+pub async fn conversation_update_params(
+    id: String,
+    params: String,
+) -> Result<ConversationDto, BridgeError> {
+    let v: serde_json::Value = serde_json::from_str(&params)
+        .context("params must be JSON")
+        .map_err(clean)?;
+    if !v.is_object() {
+        return Err(BridgeError("params must be a JSON object".into()));
+    }
+    let c = storage()
+        .map_err(clean)?
+        .update_conversation_params(&id, &params)
+        .await
+        .context("update conversation params")
+        .map_err(clean)?;
+    Ok(to_dto(c))
+}
+
 pub async fn conversation_get(id: String) -> Result<ConversationDto, BridgeError> {
     let c = storage()
         .map_err(clean)?

@@ -260,4 +260,40 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get assistant => '助手';
+
+  @override
+  String get archive => '归档';
+
+  @override
+  String get unarchive => '取消归档';
+
+  @override
+  String get archivedConversations => '已归档会话';
+
+  @override
+  String get noArchivedConversations => '没有已归档会话';
+
+  @override
+  String get defaultModel => '默认模型';
+
+  @override
+  String get defaultModelUnset => '未设置（跟随默认提供商）';
+
+  @override
+  String get conversationParams => '会话参数';
+
+  @override
+  String get maxTokens => '最大 Tokens';
+
+  @override
+  String get maxTokensHint => '留空使用默认（4096）';
+
+  @override
+  String get systemPrompt => '系统提示词';
+
+  @override
+  String get resetToDefault => '重置为默认';
+
+  @override
+  String get modelNoVision => '当前模型不支持图片输入';
 }

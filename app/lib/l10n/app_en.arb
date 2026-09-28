@@ -75,5 +75,17 @@
   "send": "Send",
   "conversation": "Conversation",
   "user": "User",
-  "assistant": "Assistant"
+  "assistant": "Assistant",
+  "archive": "Archive",
+  "unarchive": "Unarchive",
+  "archivedConversations": "Archived Chats",
+  "noArchivedConversations": "No archived chats",
+  "defaultModel": "Default Model",
+  "defaultModelUnset": "Not set (follow default provider)",
+  "conversationParams": "Parameters",
+  "maxTokens": "Max Tokens",
+  "maxTokensHint": "Empty = default (4096)",
+  "systemPrompt": "System Prompt",
+  "resetToDefault": "Reset",
+  "modelNoVision": "This model doesn't support image input"
 }

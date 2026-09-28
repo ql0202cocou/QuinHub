@@ -553,6 +553,78 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'助手'**
   String get assistant;
+
+  /// No description provided for @archive.
+  ///
+  /// In zh, this message translates to:
+  /// **'归档'**
+  String get archive;
+
+  /// No description provided for @unarchive.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消归档'**
+  String get unarchive;
+
+  /// No description provided for @archivedConversations.
+  ///
+  /// In zh, this message translates to:
+  /// **'已归档会话'**
+  String get archivedConversations;
+
+  /// No description provided for @noArchivedConversations.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有已归档会话'**
+  String get noArchivedConversations;
+
+  /// No description provided for @defaultModel.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认模型'**
+  String get defaultModel;
+
+  /// No description provided for @defaultModelUnset.
+  ///
+  /// In zh, this message translates to:
+  /// **'未设置（跟随默认提供商）'**
+  String get defaultModelUnset;
+
+  /// No description provided for @conversationParams.
+  ///
+  /// In zh, this message translates to:
+  /// **'会话参数'**
+  String get conversationParams;
+
+  /// No description provided for @maxTokens.
+  ///
+  /// In zh, this message translates to:
+  /// **'最大 Tokens'**
+  String get maxTokens;
+
+  /// No description provided for @maxTokensHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'留空使用默认（4096）'**
+  String get maxTokensHint;
+
+  /// No description provided for @systemPrompt.
+  ///
+  /// In zh, this message translates to:
+  /// **'系统提示词'**
+  String get systemPrompt;
+
+  /// No description provided for @resetToDefault.
+  ///
+  /// In zh, this message translates to:
+  /// **'重置为默认'**
+  String get resetToDefault;
+
+  /// No description provided for @modelNoVision.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前模型不支持图片输入'**
+  String get modelNoVision;
 }
 
 class _AppLocalizationsDelegate

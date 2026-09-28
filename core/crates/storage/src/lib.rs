@@ -290,6 +290,32 @@ impl Storage {
         Ok(rows)
     }
 
+    /// 已归档会话列表（归档页用），按最近更新倒序。
+    pub async fn list_archived_conversations(&self) -> Result<Vec<Conversation>, StorageError> {
+        let rows = sqlx::query_as::<_, Conversation>(
+            "SELECT * FROM conversation WHERE archived = 1 AND deleted_at IS NULL
+             ORDER BY pinned DESC, updated_at DESC",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows)
+    }
+
+    /// 整体替换会话参数 JSON（temperature/top_p/max_tokens/system_prompt 等，'{}' 恢复默认）。
+    pub async fn update_conversation_params(
+        &self,
+        id: &str,
+        params: &str,
+    ) -> Result<Conversation, StorageError> {
+        sqlx::query("UPDATE conversation SET params = ?, updated_at = ?, rev = rev + 1 WHERE id = ? AND deleted_at IS NULL")
+            .bind(params)
+            .bind(now_millis())
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+        self.get_conversation(id).await
+    }
+
     /// 改标题/置顶/归档（None 表示不动该字段）。
     pub async fn update_conversation_meta(
         &self,
@@ -544,6 +570,34 @@ mod conv_tests {
         s.delete_conversation(&c2.id).await.unwrap();
         assert_eq!(s.list_conversations().await.unwrap().len(), 1);
         assert!(s.get_conversation(&c2.id).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn conversation_archive_and_params() {
+        let (s, cid) = setup().await;
+
+        // 归档后从普通列表消失、出现在归档列表；取消后恢复
+        s.update_conversation_meta(&cid, None, None, Some(true))
+            .await
+            .unwrap();
+        assert!(s.list_conversations().await.unwrap().is_empty());
+        assert_eq!(s.list_archived_conversations().await.unwrap().len(), 1);
+        s.update_conversation_meta(&cid, None, None, Some(false))
+            .await
+            .unwrap();
+        assert_eq!(s.list_conversations().await.unwrap().len(), 1);
+        assert!(s.list_archived_conversations().await.unwrap().is_empty());
+
+        // params 整体替换并持久化
+        let c = s
+            .update_conversation_params(&cid, r#"{"temperature":0.7}"#)
+            .await
+            .unwrap();
+        assert_eq!(c.params, r#"{"temperature":0.7}"#);
+        assert_eq!(
+            s.get_conversation(&cid).await.unwrap().params,
+            r#"{"temperature":0.7}"#
+        );
     }
 }
 

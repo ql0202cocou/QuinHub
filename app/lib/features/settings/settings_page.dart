@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:quinhub/state/profiles.dart';
 import 'package:quinhub/state/settings.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
 
@@ -14,6 +15,7 @@ class SettingsPage extends ConsumerWidget {
     final themeMode =
         ref.watch(themeModeProvider).valueOrNull ?? ThemeMode.system;
     final locale = ref.watch(localeProvider).valueOrNull;
+    final defaultModel = ref.watch(defaultModelProvider).valueOrNull;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),
       body: ListView(
@@ -24,6 +26,12 @@ class SettingsPage extends ConsumerWidget {
             subtitle: Text(l10n.providersSubtitle),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/providers'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.archive_outlined),
+            title: Text(l10n.archivedConversations),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/archived'),
           ),
           const Divider(),
           ListTile(
@@ -47,6 +55,13 @@ class SettingsPage extends ConsumerWidget {
             }),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => _pickLanguage(context, ref, locale),
+          ),
+          ListTile(
+            leading: const Icon(Icons.smart_toy_outlined),
+            title: Text(l10n.defaultModel),
+            subtitle: Text(defaultModel?.modelId ?? l10n.defaultModelUnset),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _pickDefaultModel(context, ref, defaultModel),
           ),
           const Divider(),
           ListTile(
@@ -89,6 +104,59 @@ class SettingsPage extends ConsumerWidget {
     if (mode != null) {
       await ref.read(themeModeProvider.notifier).setMode(mode);
     }
+  }
+
+  Future<void> _pickDefaultModel(
+    BuildContext context,
+    WidgetRef ref,
+    ({String profileId, String modelId})? cur,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final profiles = ref.read(profilesProvider).valueOrNull ?? [];
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            ListTile(
+              title: Text(l10n.defaultModelUnset),
+              trailing: cur == null
+                  ? const Icon(Icons.check, color: Colors.green)
+                  : null,
+              onTap: () async {
+                Navigator.pop(ctx);
+                await ref.read(defaultModelProvider.notifier).clear();
+              },
+            ),
+            for (final p in profiles)
+              if (p.enabledModels.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: Text(
+                    p.name,
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                ),
+                for (final m in p.enabledModels)
+                  ListTile(
+                    dense: true,
+                    title: Text(m),
+                    trailing: (cur?.profileId == p.id && cur?.modelId == m)
+                        ? const Icon(Icons.check, color: Colors.green)
+                        : null,
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      await ref
+                          .read(defaultModelProvider.notifier)
+                          .set(p.id, m);
+                    },
+                  ),
+              ],
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _pickLanguage(

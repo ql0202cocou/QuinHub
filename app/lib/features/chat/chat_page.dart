@@ -147,6 +147,117 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     }
   }
 
+  /// 会话参数弹层：temperature / top_p / max_tokens / system_prompt。
+  /// 保存整体写回 conversation.params（'{}' 表示恢复默认），发送链路每次从库里读，无需额外刷新。
+  Future<void> _showParams(ConversationDto conv) async {
+    final l10n = AppLocalizations.of(context);
+    final p = (jsonDecode(conv.params.isEmpty ? '{}' : conv.params) as Map)
+        .cast<String, dynamic>();
+    var temperature = (p['temperature'] as num?)?.toDouble() ?? 1.0;
+    var topP = (p['top_p'] as num?)?.toDouble() ?? 1.0;
+    final maxTokens = TextEditingController(
+      text: (p['max_tokens'] as num?)?.toString() ?? '',
+    );
+    final systemPrompt = TextEditingController(
+      text: p['system_prompt'] as String? ?? '',
+    );
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 12,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.conversationParams,
+                  style: Theme.of(ctx).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Text('Temperature: ${temperature.toStringAsFixed(2)}'),
+                Slider(
+                  value: temperature,
+                  min: 0,
+                  max: 2,
+                  divisions: 40,
+                  onChanged: (v) => setSheet(() => temperature = v),
+                ),
+                Text('Top P: ${topP.toStringAsFixed(2)}'),
+                Slider(
+                  value: topP,
+                  min: 0,
+                  max: 1,
+                  divisions: 20,
+                  onChanged: (v) => setSheet(() => topP = v),
+                ),
+                TextField(
+                  controller: maxTokens,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: l10n.maxTokens,
+                    hintText: l10n.maxTokensHint,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: systemPrompt,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    labelText: l10n.systemPrompt,
+                    border: const OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, 'reset'),
+                      child: Text(l10n.resetToDefault),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(l10n.cancel),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, 'save'),
+                      child: Text(l10n.save),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (action == null) return;
+    final mt = int.tryParse(maxTokens.text.trim());
+    final sp = systemPrompt.text.trim();
+    final params = action == 'reset'
+        ? '{}'
+        : jsonEncode(<String, dynamic>{
+            'temperature': temperature,
+            'top_p': topP,
+            'max_tokens': ?mt,
+            if (sp.isNotEmpty) 'system_prompt': sp,
+          });
+    await conversationUpdateParams(id: conv.id, params: params);
+    ref.invalidate(conversationProvider(_id));
+  }
+
   void _showUsage(AppLocalizations l10n) {
     final msgs = ref.read(chatProvider(_id)).valueOrNull?.messages ?? [];
     final done = msgs.where((m) => m.role == 'assistant' && m.status == 'done');
@@ -223,6 +334,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final chatAsync = ref.watch(chatProvider(_id));
     final chat = chatAsync.valueOrNull;
     final appDir = ref.watch(appDirProvider);
+    // vision gating：非视觉模型禁用图片入口（plan.md 第一期范围）
+    final vision =
+        ref
+            .watch(modelVisionProvider(convAsync.valueOrNull?.modelId))
+            .valueOrNull ??
+        true;
 
     // 流式时自动跟随底部
     if (chat?.streaming ?? false) _scrollToBottom();
@@ -253,8 +370,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               if (v == 'md') exportMarkdown(title, msgs, l10n);
               if (v == 'img') shareAsImage(context, title, msgs, l10n);
               if (v == 'usage') _showUsage(l10n);
+              if (v == 'params') {
+                final c = convAsync.valueOrNull;
+                if (c != null) _showParams(c);
+              }
             },
             itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'params',
+                child: Text(l10n.conversationParams),
+              ),
               PopupMenuItem(value: 'md', child: Text(l10n.exportMarkdown)),
               PopupMenuItem(value: 'img', child: Text(l10n.shareImage)),
               PopupMenuItem(value: 'usage', child: Text(l10n.usageStats)),
@@ -287,7 +412,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           ),
           if (_pendingImages.isNotEmpty) _imageChips(),
           const Divider(height: 1),
-          _inputBar(chat?.streaming ?? false),
+          _inputBar(chat?.streaming ?? false, vision),
         ],
       ),
     );
@@ -380,7 +505,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
-  Widget _inputBar(bool streaming) {
+  Widget _inputBar(bool streaming, bool vision) {
     final l10n = AppLocalizations.of(context);
     return SafeArea(
       child: Padding(
@@ -388,9 +513,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            IconButton(
-              onPressed: streaming ? null : _pickImage,
-              icon: const Icon(Icons.add_photo_alternate_outlined),
+            Tooltip(
+              message: vision ? '' : l10n.modelNoVision,
+              child: IconButton(
+                onPressed: (streaming || !vision) ? null : _pickImage,
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+              ),
             ),
             Expanded(
               child: TextField(

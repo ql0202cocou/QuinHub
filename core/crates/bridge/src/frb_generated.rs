@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -328571340;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -615285797;
 
 // Section: executor
 
@@ -227,6 +227,42 @@ fn wire__crate__api__chat__chat_send_impl(
                             )
                             .await;
                         })?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__conversation__conversation_archived_list_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "conversation_archived_list",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, crate::api::BridgeError>(
+                    (move || async move {
+                        let output_ok =
+                            crate::api::conversation::conversation_archived_list().await?;
                         std::result::Result::Ok(output_ok)
                     })()
                     .await,
@@ -472,6 +508,46 @@ fn wire__crate__api__conversation__conversation_update_meta_impl(
         },
     )
 }
+fn wire__crate__api__conversation__conversation_update_params_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "conversation_update_params",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_id = <String>::sse_decode(&mut deserializer);
+            let api_params = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, crate::api::BridgeError>(
+                    (move || async move {
+                        let output_ok = crate::api::conversation::conversation_update_params(
+                            api_id, api_params,
+                        )
+                        .await?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__echo__echo_stream_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -656,6 +732,44 @@ fn wire__crate__api__message__message_list_impl(
                     (move || async move {
                         let output_ok =
                             crate::api::message::message_list(api_conversation_id).await?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__profile__model_supports_vision_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "model_supports_vision",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_model_id = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, ()>(
+                    (move || async move {
+                        let output_ok = Ok::<_, ()>(
+                            crate::api::profile::model_supports_vision(api_model_id).await,
+                        )?;
                         std::result::Result::Ok(output_ok)
                     })()
                     .await,
@@ -1309,52 +1423,67 @@ fn pde_ffi_dispatcher_primary_impl(
         2 => wire__crate__api__chat__chat_edit_resend_impl(port, ptr, rust_vec_len, data_len),
         3 => wire__crate__api__chat__chat_regenerate_impl(port, ptr, rust_vec_len, data_len),
         4 => wire__crate__api__chat__chat_send_impl(port, ptr, rust_vec_len, data_len),
-        5 => wire__crate__api__conversation__conversation_create_impl(
+        5 => wire__crate__api__conversation__conversation_archived_list_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        6 => wire__crate__api__conversation__conversation_delete_impl(
+        6 => wire__crate__api__conversation__conversation_create_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        7 => {
+        7 => wire__crate__api__conversation__conversation_delete_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        8 => {
             wire__crate__api__conversation__conversation_get_impl(port, ptr, rust_vec_len, data_len)
         }
-        8 => wire__crate__api__conversation__conversation_list_impl(
+        9 => wire__crate__api__conversation__conversation_list_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        9 => wire__crate__api__conversation__conversation_set_model_impl(
+        10 => wire__crate__api__conversation__conversation_set_model_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        10 => wire__crate__api__conversation__conversation_update_meta_impl(
+        11 => wire__crate__api__conversation__conversation_update_meta_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        11 => wire__crate__api__echo__echo_stream_impl(port, ptr, rust_vec_len, data_len),
-        12 => wire__crate__api__echo__init_app_impl(port, ptr, rust_vec_len, data_len),
-        13 => wire__crate__api__lifecycle__init_core_impl(port, ptr, rust_vec_len, data_len),
-        14 => wire__crate__api__message__message_delete_impl(port, ptr, rust_vec_len, data_len),
-        15 => wire__crate__api__message__message_list_impl(port, ptr, rust_vec_len, data_len),
-        16 => wire__crate__api__profile__profile_create_impl(port, ptr, rust_vec_len, data_len),
-        17 => wire__crate__api__profile__profile_delete_impl(port, ptr, rust_vec_len, data_len),
-        18 => wire__crate__api__profile__profile_get_impl(port, ptr, rust_vec_len, data_len),
-        19 => wire__crate__api__profile__profile_list_impl(port, ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__profile__profile_test_impl(port, ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__profile__profile_update_impl(port, ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__settings__settings_get_impl(port, ptr, rust_vec_len, data_len),
-        23 => wire__crate__api__settings__settings_set_impl(port, ptr, rust_vec_len, data_len),
+        12 => wire__crate__api__conversation__conversation_update_params_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        13 => wire__crate__api__echo__echo_stream_impl(port, ptr, rust_vec_len, data_len),
+        14 => wire__crate__api__echo__init_app_impl(port, ptr, rust_vec_len, data_len),
+        15 => wire__crate__api__lifecycle__init_core_impl(port, ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__message__message_delete_impl(port, ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__message__message_list_impl(port, ptr, rust_vec_len, data_len),
+        18 => {
+            wire__crate__api__profile__model_supports_vision_impl(port, ptr, rust_vec_len, data_len)
+        }
+        19 => wire__crate__api__profile__profile_create_impl(port, ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__profile__profile_delete_impl(port, ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__profile__profile_get_impl(port, ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__profile__profile_list_impl(port, ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__profile__profile_test_impl(port, ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__profile__profile_update_impl(port, ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__settings__settings_get_impl(port, ptr, rust_vec_len, data_len),
+        26 => wire__crate__api__settings__settings_set_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }

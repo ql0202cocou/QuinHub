@@ -5,6 +5,7 @@ import 'package:quinhub/bridge/api/conversation.dart';
 import 'package:quinhub/state/conversations.dart';
 import 'package:quinhub/state/core.dart';
 import 'package:quinhub/state/profiles.dart';
+import 'package:quinhub/state/settings.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
 
 /// 会话列表首页。
@@ -29,17 +30,31 @@ class HomePage extends ConsumerWidget {
       context.push('/settings/providers');
       return;
     }
-    final profile =
-        profiles.where((p) => p.isDefault).firstOrNull ?? profiles.first;
-    if (profile.enabledModels.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.noEnabledModels(profile.name))),
-      );
-      return;
+    // 优先用全局默认模型（设置页可配），失效时回落到默认提供商的首个启用模型
+    final dm = ref.read(defaultModelProvider).valueOrNull;
+    final dmProfile = dm == null
+        ? null
+        : profiles.where((p) => p.id == dm.profileId).firstOrNull;
+    final String profileId;
+    final String modelId;
+    if (dmProfile != null && dmProfile.enabledModels.contains(dm!.modelId)) {
+      profileId = dmProfile.id;
+      modelId = dm.modelId;
+    } else {
+      final profile =
+          profiles.where((p) => p.isDefault).firstOrNull ?? profiles.first;
+      if (profile.enabledModels.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.noEnabledModels(profile.name))),
+        );
+        return;
+      }
+      profileId = profile.id;
+      modelId = profile.enabledModels.first;
     }
     final conv = await ref
         .read(conversationsProvider.notifier)
-        .createNew(profileId: profile.id, modelId: profile.enabledModels.first);
+        .createNew(profileId: profileId, modelId: modelId);
     if (context.mounted) context.push('/chat/${conv.id}');
   }
 
@@ -102,6 +117,16 @@ class HomePage extends ConsumerWidget {
               onTap: () {
                 Navigator.pop(ctx);
                 _rename(context, ref, c);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.archive_outlined),
+              title: Text(l10n.archive),
+              onTap: () {
+                Navigator.pop(ctx);
+                ref
+                    .read(conversationsProvider.notifier)
+                    .toggleArchive(c.id, c.archived);
               },
             ),
             ListTile(

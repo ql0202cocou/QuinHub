@@ -25,6 +25,7 @@
 | `/` | 会话列表 | 首页 |
 | `/chat/:id` | 聊天页 | `:id = new` 表示新会话（首条消息发送后才落库建会话） |
 | `/settings` | 设置 | 主题、语言、默认模型、关于 |
+| `/settings/archived` | 已归档会话 | 归档列表查看处：取消归档 / 删除（长按菜单），点按仍可进入查看 |
 | `/settings/providers` | 提供商列表 | 已配置的 ProviderProfile 列表 |
 | `/settings/providers/:id` | 提供商编辑 | 增删改 Key/base_url、拉取模型列表、连通性测试 |
 

@@ -124,14 +124,14 @@ QuinHub/
 1. **提供商管理**：多个 ProviderProfile 增删改；Key 加密存储；连通性测试（拉取模型列表）。✅
 2. **聊天核心**：
    - SSE 流式输出，可取消；失败重试；重新生成；编辑重发。✅
-   - 多会话：新建/重命名/置顶/归档/删除，本地持久化，杀进程恢复。✅（⚠️ 归档未做 UI 入口，归档会话无查看处——backlog）
-   - 会话级模型切换与参数（temperature、top_p、max_tokens、system prompt）。⚠️ 只做了模型切换；参数编辑 UI 未做（DB/Rust 读取已就绪）——backlog
-   - **图片消息**：拍照/相册选图、压缩、base64 发送（OpenAI `image_url` 与 Anthropic `source` 两种格式适配）；仅对 capabilities 含 vision 的模型开放入口。✅（⚠️ vision 能力 gating 未做，+ 号始终可用——backlog）
+   - 多会话：新建/重命名/置顶/归档/删除，本地持久化，杀进程恢复。✅（归档入口 2026-09-28 补齐：长按菜单归档 + 设置 → 已归档会话页）
+   - 会话级模型切换与参数（temperature、top_p、max_tokens、system prompt）。✅（参数弹层 2026-09-28 补齐：聊天页更多菜单 → 会话参数）
+   - **图片消息**：拍照/相册选图、压缩、base64 发送（OpenAI `image_url` 与 Anthropic `source` 两种格式适配）；仅对 capabilities 含 vision 的模型开放入口。✅（vision gating 2026-09-28 补齐：Rust 侧 `model_supports_vision` 启发式，非视觉模型禁用图片按钮）
    - Markdown 渲染：代码高亮 + 一键复制、表格、列表；LaTeX 留接口。✅（LaTeX 未做）
    - Token 用量展示（取响应 usage）。✅（消息级 + 会话级统计对话框）
    - **上下文管理（Agent 化）**：历史全量存储不丢弃；ContextManager 负责发送时的上下文组装，默认策略 `auto_summary`（接近模型窗口时自动滚动摘要旧消息）；见 decisions.md 决策四。✅（⚠️ 未用超长真实对话实测触发——backlog 验证项）
 3. **导出与分享**：会话导出 Markdown 文件；分享长图（滚动截屏渲染）；均走系统分享面板。✅（长图实为离屏 RepaintBoundary 渲染）
-4. **设置**：主题、语言、默认参数。⚠️ 主题/语言已做；默认参数（全局默认模型）未做——backlog
+4. **设置**：主题、语言、默认参数。✅（全局默认模型 2026-09-28 补齐：设置页选择器存 settings KV，新建会话优先取用）
 5. **同步预留**：`SyncBackend` 接口 + no-op 实现 + 墓碑/版本字段；方向性约定见 [engineering.md](./engineering.md) 同步一节。✅
 
 明确不做（仅留接口/字段）：插件与工具调用、知识库 RAG、语音、绘图、助手市场、账号登录。

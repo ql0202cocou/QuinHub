@@ -34,6 +34,12 @@ class ConversationsNotifier extends AsyncNotifier<List<ConversationDto>> {
     await reload();
   }
 
+  Future<void> toggleArchive(String id, bool archived) async {
+    await conversationUpdateMeta(id: id, archived: !archived);
+    await reload();
+    ref.invalidate(archivedConversationsProvider);
+  }
+
   Future<void> remove(String id) async {
     await conversationDelete(id: id);
     await reload();
@@ -53,3 +59,34 @@ final conversationProvider = FutureProvider.family<ConversationDto, String>((
   await ref.watch(coreInitProvider.future); // 等 Rust 核心初始化
   return conversationGet(id: id);
 });
+
+/// 已归档会话列表（设置 → 已归档会话页用）。
+class ArchivedConversationsNotifier
+    extends AsyncNotifier<List<ConversationDto>> {
+  @override
+  Future<List<ConversationDto>> build() async {
+    await ref.watch(coreInitProvider.future);
+    return conversationArchivedList();
+  }
+
+  Future<void> reload() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(conversationArchivedList);
+  }
+
+  Future<void> unarchive(String id) async {
+    await conversationUpdateMeta(id: id, archived: false);
+    await reload();
+    ref.invalidate(conversationsProvider);
+  }
+
+  Future<void> remove(String id) async {
+    await conversationDelete(id: id);
+    await reload();
+  }
+}
+
+final archivedConversationsProvider =
+    AsyncNotifierProvider<ArchivedConversationsNotifier, List<ConversationDto>>(
+      ArchivedConversationsNotifier.new,
+    );

@@ -263,4 +263,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get assistant => 'Assistant';
+
+  @override
+  String get archive => 'Archive';
+
+  @override
+  String get unarchive => 'Unarchive';
+
+  @override
+  String get archivedConversations => 'Archived Chats';
+
+  @override
+  String get noArchivedConversations => 'No archived chats';
+
+  @override
+  String get defaultModel => 'Default Model';
+
+  @override
+  String get defaultModelUnset => 'Not set (follow default provider)';
+
+  @override
+  String get conversationParams => 'Parameters';
+
+  @override
+  String get maxTokens => 'Max Tokens';
+
+  @override
+  String get maxTokensHint => 'Empty = default (4096)';
+
+  @override
+  String get systemPrompt => 'System Prompt';
+
+  @override
+  String get resetToDefault => 'Reset';
+
+  @override
+  String get modelNoVision => 'This model doesn\'t support image input';
 }
