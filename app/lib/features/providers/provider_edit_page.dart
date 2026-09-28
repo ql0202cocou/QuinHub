@@ -47,7 +47,6 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
   }
 
   Future<void> _load() async {
-    final l10n = AppLocalizations.of(context);
     try {
       final p = await profileGet(id: widget.profileId);
       if (!mounted) return;
@@ -61,8 +60,11 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.loadFailed('$e'))));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).loadFailed('$e')),
+        ),
+      );
       setState(() => _loading = false);
     }
   }
