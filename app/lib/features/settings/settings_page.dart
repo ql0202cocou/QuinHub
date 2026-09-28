@@ -19,56 +19,79 @@ class SettingsPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),
       body: ListView(
+        padding: const EdgeInsets.all(12),
         children: [
-          ListTile(
-            leading: const Icon(Icons.key_outlined),
-            title: Text(l10n.providers),
-            subtitle: Text(l10n.providersSubtitle),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/settings/providers'),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.key_outlined),
+                  title: Text(l10n.providers),
+                  subtitle: Text(l10n.providersSubtitle),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/settings/providers'),
+                ),
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  leading: const Icon(Icons.archive_outlined),
+                  title: Text(l10n.archivedConversations),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/settings/archived'),
+                ),
+              ],
+            ),
           ),
-          ListTile(
-            leading: const Icon(Icons.archive_outlined),
-            title: Text(l10n.archivedConversations),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push('/settings/archived'),
+          const SizedBox(height: 12),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.palette_outlined),
+                  title: Text(l10n.appearance),
+                  subtitle: Text(switch (themeMode) {
+                    ThemeMode.light => l10n.light,
+                    ThemeMode.dark => l10n.dark,
+                    ThemeMode.system => l10n.followSystem,
+                  }),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _pickTheme(context, ref, themeMode),
+                ),
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  leading: const Icon(Icons.language_outlined),
+                  title: Text(l10n.language),
+                  subtitle: Text(switch (locale?.languageCode) {
+                    'zh' => '中文',
+                    'en' => 'English',
+                    _ => l10n.followSystem,
+                  }),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _pickLanguage(context, ref, locale),
+                ),
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  leading: const Icon(Icons.smart_toy_outlined),
+                  title: Text(l10n.defaultModel),
+                  subtitle: Text(
+                    defaultModel?.modelId ?? l10n.defaultModelUnset,
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _pickDefaultModel(context, ref, defaultModel),
+                ),
+              ],
+            ),
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.palette_outlined),
-            title: Text(l10n.appearance),
-            subtitle: Text(switch (themeMode) {
-              ThemeMode.light => l10n.light,
-              ThemeMode.dark => l10n.dark,
-              ThemeMode.system => l10n.followSystem,
-            }),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _pickTheme(context, ref, themeMode),
-          ),
-          ListTile(
-            leading: const Icon(Icons.language_outlined),
-            title: Text(l10n.language),
-            subtitle: Text(switch (locale?.languageCode) {
-              'zh' => '中文',
-              'en' => 'English',
-              _ => l10n.followSystem,
-            }),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _pickLanguage(context, ref, locale),
-          ),
-          ListTile(
-            leading: const Icon(Icons.smart_toy_outlined),
-            title: Text(l10n.defaultModel),
-            subtitle: Text(defaultModel?.modelId ?? l10n.defaultModelUnset),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _pickDefaultModel(context, ref, defaultModel),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: Text(l10n.about),
-            subtitle: Text('v1.0.0 · M5'),
-            enabled: false,
+          const SizedBox(height: 12),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: Text(l10n.about),
+              subtitle: const Text('v1.0.0 · M5'),
+              enabled: false,
+            ),
           ),
         ],
       ),

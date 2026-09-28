@@ -82,23 +82,33 @@ class ArchivedPage extends ConsumerWidget {
           if (list.isEmpty) {
             return Center(child: Text(l10n.noArchivedConversations));
           }
-          return ListView.separated(
-            itemCount: list.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (_, i) {
-              final c = list[i];
-              return ListTile(
-                leading: const Icon(Icons.archive_outlined, size: 18),
-                title: Text(
-                  c.title.isEmpty ? l10n.unnamedConversation : c.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          return ListView(
+            padding: const EdgeInsets.all(12),
+            children: [
+              Card(
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: [
+                    for (var i = 0; i < list.length; i++) ...[
+                      if (i > 0) const Divider(height: 1, indent: 56),
+                      ListTile(
+                        leading: const Icon(Icons.archive_outlined, size: 20),
+                        title: Text(
+                          list[i].title.isEmpty
+                              ? l10n.unnamedConversation
+                              : list[i].title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(list[i].modelId ?? ''),
+                        onTap: () => context.push('/chat/${list[i].id}'),
+                        onLongPress: () => _menu(context, ref, list[i]),
+                      ),
+                    ],
+                  ],
                 ),
-                subtitle: Text(c.modelId ?? ''),
-                onTap: () => context.push('/chat/${c.id}'),
-                onLongPress: () => _menu(context, ref, c),
-              );
-            },
+              ),
+            ],
           );
         },
       ),

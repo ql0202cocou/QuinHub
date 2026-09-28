@@ -43,6 +43,53 @@ class ProvidersPage extends ConsumerWidget {
     }
   }
 
+  Widget _tile(BuildContext context, WidgetRef ref, ProfileDto p) {
+    final l10n = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+    return ListTile(
+      leading: CircleAvatar(
+        radius: 19,
+        backgroundColor: cs.primary.withValues(alpha: 0.10),
+        child: Text(
+          p.name.characters.first.toUpperCase(),
+          style: TextStyle(
+            color: cs.primary,
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+          ),
+        ),
+      ),
+      title: Row(
+        children: [
+          Flexible(child: Text(p.name)),
+          if (p.isDefault) ...[
+            const SizedBox(width: 6),
+            const Icon(Icons.star, size: 16, color: Colors.amber),
+          ],
+        ],
+      ),
+      subtitle: Text(
+        '${providerTypeLabel(p.providerType)} · ${p.baseUrl}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: PopupMenuButton<String>(
+        onSelected: (v) {
+          if (v == 'edit') {
+            context.push('/settings/providers/${p.id}');
+          } else if (v == 'delete') {
+            _confirmDelete(context, ref, p);
+          }
+        },
+        itemBuilder: (_) => [
+          PopupMenuItem(value: 'edit', child: Text(l10n.edit)),
+          PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
+        ],
+      ),
+      onTap: () => context.push('/settings/providers/${p.id}'),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
@@ -54,48 +101,21 @@ class ProvidersPage extends ConsumerWidget {
         error: (e, _) => Center(child: Text(l10n.loadFailed('$e'))),
         data: (list) => list.isEmpty
             ? Center(child: Text(l10n.noProviders))
-            : ListView.separated(
-                itemCount: list.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (_, i) {
-                  final p = list[i];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      child: Text(p.name.characters.first.toUpperCase()),
-                    ),
-                    title: Row(
+            : ListView(
+                padding: const EdgeInsets.all(12),
+                children: [
+                  Card(
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
                       children: [
-                        Flexible(child: Text(p.name)),
-                        if (p.isDefault) ...[
-                          const SizedBox(width: 6),
-                          const Icon(Icons.star, size: 16, color: Colors.amber),
+                        for (var i = 0; i < list.length; i++) ...[
+                          if (i > 0) const Divider(height: 1, indent: 68),
+                          _tile(context, ref, list[i]),
                         ],
                       ],
                     ),
-                    subtitle: Text(
-                      '${providerTypeLabel(p.providerType)} · ${p.baseUrl}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (v) {
-                        if (v == 'edit') {
-                          context.push('/settings/providers/${p.id}');
-                        } else if (v == 'delete') {
-                          _confirmDelete(context, ref, p);
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(value: 'edit', child: Text(l10n.edit)),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(l10n.delete),
-                        ),
-                      ],
-                    ),
-                    onTap: () => context.push('/settings/providers/${p.id}'),
-                  );
-                },
+                  ),
+                ],
               ),
       ),
       floatingActionButton: FloatingActionButton(

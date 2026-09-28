@@ -296,4 +296,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get modelNoVision => '当前模型不支持图片输入';
+
+  @override
+  String get searchChats => '搜索会话';
+
+  @override
+  String get noSearchResult => '没有匹配的会话';
+
+  @override
+  String get pinnedSection => '置顶';
+
+  @override
+  String get recentSection => '最近';
 }

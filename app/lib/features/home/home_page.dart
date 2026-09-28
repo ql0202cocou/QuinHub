@@ -8,9 +8,23 @@ import 'package:quinhub/state/profiles.dart';
 import 'package:quinhub/state/settings.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
 
-/// 会话列表首页。
-class HomePage extends ConsumerWidget {
+/// 会话列表首页：搜索 + 置顶/最近分区（LobeHub 风格）。
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
+
+  @override
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  final _search = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   String _fmtTime(int millis) {
     final t = DateTime.fromMillisecondsSinceEpoch(millis);
@@ -131,7 +145,10 @@ class HomePage extends ConsumerWidget {
             ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: Text(l10n.delete, style: TextStyle(color: Colors.red)),
+              title: Text(
+                l10n.delete,
+                style: const TextStyle(color: Colors.red),
+              ),
               onTap: () async {
                 Navigator.pop(ctx);
                 final ok = await showDialog<bool>(
@@ -166,9 +183,58 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget _sectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.labelMedium
+            ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
+    );
+  }
+
+  Widget _tile(BuildContext context, WidgetRef ref, ConversationDto c) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: CircleAvatar(
+        radius: 19,
+        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.10),
+        child: Icon(
+          Icons.chat_bubble_outline_rounded,
+          size: 17,
+          color: theme.colorScheme.primary,
+        ),
+      ),
+      title: Text(
+        c.title.isEmpty ? l10n.unnamedConversation : c.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(c.modelId ?? '', maxLines: 1),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(_fmtTime(c.updatedAt.toInt()), style: theme.textTheme.bodySmall),
+          if (c.pinned)
+            Icon(
+              Icons.push_pin,
+              size: 14,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+        ],
+      ),
+      onTap: () => context.push('/chat/${c.id}'),
+      onLongPress: () => _menu(context, ref, c),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final core = ref.watch(coreInitProvider);
     final convs = ref.watch(conversationsProvider);
     final profiles = ref.watch(profilesProvider);
@@ -203,10 +269,24 @@ class HomePage extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.key_outlined, size: 56),
-                  const SizedBox(height: 12),
-                  Text(l10n.noProvidersGuide),
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: theme.colorScheme.primary.withValues(
+                      alpha: 0.10,
+                    ),
+                    child: Icon(
+                      Icons.key_outlined,
+                      size: 34,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
                   const SizedBox(height: 16),
+                  Text(
+                    l10n.noProvidersGuide,
+                    style: theme.textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
                   FilledButton.icon(
                     onPressed: () => context.push('/settings/providers'),
                     icon: const Icon(Icons.add),
@@ -216,33 +296,75 @@ class HomePage extends ConsumerWidget {
               ),
             );
           }
-          final list = convs.valueOrNull ?? [];
-          if (list.isEmpty) {
-            return Center(child: Text(l10n.noConversations));
-          }
-          return ListView.separated(
-            itemCount: list.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (_, i) {
-              final c = list[i];
-              return ListTile(
-                leading: c.pinned
-                    ? const Icon(Icons.push_pin, size: 18)
-                    : const Icon(Icons.chat_bubble_outline, size: 18),
-                title: Text(
-                  c.title.isEmpty ? l10n.unnamedConversation : c.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          final all = convs.valueOrNull ?? [];
+          final q = _query.trim().toLowerCase();
+          final list = q.isEmpty
+              ? all
+              : all.where((c) => c.title.toLowerCase().contains(q)).toList();
+          final pinned = list.where((c) => c.pinned).toList();
+          final recent = list.where((c) => !c.pinned).toList();
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: TextField(
+                  controller: _search,
+                  onChanged: (v) => setState(() => _query = v),
+                  decoration: InputDecoration(
+                    hintText: l10n.searchChats,
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                  ),
                 ),
-                subtitle: Text(c.modelId ?? l10n.unnamedConversation),
-                trailing: Text(
-                  _fmtTime(c.updatedAt.toInt()),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                onTap: () => context.push('/chat/${c.id}'),
-                onLongPress: () => _menu(context, ref, c),
-              );
-            },
+              ),
+              Expanded(
+                child: list.isEmpty
+                    ? Center(
+                        child: Text(
+                          q.isEmpty
+                              ? l10n.noConversations
+                              : l10n.noSearchResult,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.only(bottom: 88),
+                        children: [
+                          if (pinned.isNotEmpty) ...[
+                            _sectionLabel(l10n.pinnedSection),
+                            Card(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: Column(
+                                children: [
+                                  for (final c in pinned)
+                                    _tile(context, ref, c),
+                                ],
+                              ),
+                            ),
+                          ],
+                          if (recent.isNotEmpty) ...[
+                            _sectionLabel(l10n.recentSection),
+                            Card(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: Column(
+                                children: [
+                                  for (final c in recent)
+                                    _tile(context, ref, c),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+              ),
+            ],
           );
         },
       ),

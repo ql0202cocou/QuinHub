@@ -99,5 +99,9 @@
   "maxTokensHint": "留空使用默认（4096）",
   "systemPrompt": "系统提示词",
   "resetToDefault": "重置为默认",
-  "modelNoVision": "当前模型不支持图片输入"
+  "modelNoVision": "当前模型不支持图片输入",
+  "searchChats": "搜索会话",
+  "noSearchResult": "没有匹配的会话",
+  "pinnedSection": "置顶",
+  "recentSection": "最近"
 }

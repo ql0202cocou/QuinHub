@@ -347,21 +347,39 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     return Scaffold(
       appBar: AppBar(
         title: convAsync.when(
-          data: (c) => Text(c.title.isEmpty ? l10n.newChat : c.title),
+          data: (c) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                c.title.isEmpty ? l10n.newChat : c.title,
+                style: const TextStyle(fontSize: 16),
+              ),
+              InkWell(
+                onTap: () => _pickModel(c),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      c.modelId ?? l10n.selectModel,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
           loading: () => const Text('…'),
           error: (_, _) => Text(l10n.conversation),
         ),
         actions: [
-          convAsync.maybeWhen(
-            data: (c) => TextButton(
-              onPressed: () => _pickModel(c),
-              child: Text(
-                c.modelId ?? l10n.selectModel,
-                style: const TextStyle(fontSize: 12),
-              ),
-            ),
-            orElse: () => const SizedBox.shrink(),
-          ),
           PopupMenuButton<String>(
             tooltip: l10n.more,
             onSelected: (v) {
@@ -441,28 +459,37 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Widget _streamingBubble(ChatState chat) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (chat.reasoningText.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                chat.reasoningText,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.hintColor,
-                  fontStyle: FontStyle.italic,
+          MessageBubble.assistantAvatar(context),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (chat.reasoningText.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      chat.reasoningText,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.hintColor,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                if (chat.streamingText.isNotEmpty)
+                  BlockedMarkdown(text: chat.streamingText),
+                const SizedBox(height: 4),
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-              ),
+              ],
             ),
-          if (chat.streamingText.isNotEmpty)
-            BlockedMarkdown(text: chat.streamingText),
-          const SizedBox(height: 4),
-          const SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(strokeWidth: 2),
           ),
         ],
       ),
@@ -507,32 +534,52 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   Widget _inputBar(bool streaming, bool vision) {
     final l10n = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Tooltip(
-              message: vision ? '' : l10n.modelNoVision,
-              child: IconButton(
-                onPressed: (streaming || !vision) ? null : _pickImage,
-                icon: const Icon(Icons.add_photo_alternate_outlined),
-              ),
-            ),
             Expanded(
-              child: TextField(
-                controller: _input,
-                maxLines: null,
-                textInputAction: TextInputAction.newline,
-                decoration: InputDecoration(
-                  hintText: l10n.inputHint,
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(26),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Tooltip(
+                      message: vision ? '' : l10n.modelNoVision,
+                      child: IconButton(
+                        onPressed: (streaming || !vision) ? null : _pickImage,
+                        icon: const Icon(
+                          Icons.add_photo_alternate_outlined,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _input,
+                        maxLines: null,
+                        textInputAction: TextInputAction.newline,
+                        decoration: InputDecoration(
+                          hintText: l10n.inputHint,
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 2,
+                            vertical: 11,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -541,7 +588,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               onPressed: streaming
                   ? () => ref.read(chatProvider(_id).notifier).cancel()
                   : _send,
-              icon: Icon(streaming ? Icons.stop : Icons.send),
+              icon: Icon(streaming ? Icons.stop : Icons.send, size: 20),
             ),
           ],
         ),

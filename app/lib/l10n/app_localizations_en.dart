@@ -299,4 +299,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modelNoVision => 'This model doesn\'t support image input';
+
+  @override
+  String get searchChats => 'Search chats';
+
+  @override
+  String get noSearchResult => 'No matching chats';
+
+  @override
+  String get pinnedSection => 'Pinned';
+
+  @override
+  String get recentSection => 'Recent';
 }

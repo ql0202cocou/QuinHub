@@ -87,5 +87,9 @@
   "maxTokensHint": "Empty = default (4096)",
   "systemPrompt": "System Prompt",
   "resetToDefault": "Reset",
-  "modelNoVision": "This model doesn't support image input"
+  "modelNoVision": "This model doesn't support image input",
+  "searchChats": "Search chats",
+  "noSearchResult": "No matching chats",
+  "pinnedSection": "Pinned",
+  "recentSection": "Recent"
 }

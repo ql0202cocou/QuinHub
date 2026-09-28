@@ -61,9 +61,7 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).loadFailed('$e')),
-        ),
+        SnackBar(content: Text(AppLocalizations.of(context).loadFailed('$e'))),
       );
       setState(() => _loading = false);
     }

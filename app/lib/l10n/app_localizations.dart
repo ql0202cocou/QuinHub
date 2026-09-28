@@ -625,6 +625,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'当前模型不支持图片输入'**
   String get modelNoVision;
+
+  /// No description provided for @searchChats.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索会话'**
+  String get searchChats;
+
+  /// No description provided for @noSearchResult.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有匹配的会话'**
+  String get noSearchResult;
+
+  /// No description provided for @pinnedSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'置顶'**
+  String get pinnedSection;
+
+  /// No description provided for @recentSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近'**
+  String get recentSection;
 }
 
 class _AppLocalizationsDelegate
