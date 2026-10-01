@@ -120,12 +120,24 @@ class _BlockedMarkdownState extends State<BlockedMarkdown> {
 }
 
 /// 代码块（LobeUI Highlighter 在 Markdown 内的形态）：
-/// fillQuaternary 底、圆角 8，头部「语言名 + 复制」，代码 12px、内边距 16。
-class _CodeBlock extends StatelessWidget {
+/// fillQuaternary 底、圆角 8，头部「折叠箭头 + 语言名 + 复制」，代码 12px、内边距 16。
+/// 点头部折叠 / 展开代码区（默认展开）。折叠状态存在 State 里：BlockedMarkdown
+/// 复用缓存的 widget 实例，流式追加时 block 位置不变，Element 与 State 得以保留。
+class _CodeBlock extends StatefulWidget {
   const _CodeBlock({required this.code, required this.language});
 
   final String code;
   final String language;
+
+  @override
+  State<_CodeBlock> createState() => _CodeBlockState();
+}
+
+class _CodeBlockState extends State<_CodeBlock> {
+  bool _collapsed = false;
+
+  String get code => widget.code;
+  String get language => widget.language;
 
   /// LobeUI 高亮配色（lobe-theme）：字符串 success、关键字 info、函数 geekblue、
   /// 存储/布尔 purple、数字 volcano、类型 warning、注释 textQuaternary。
@@ -186,50 +198,74 @@ class _CodeBlock extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: t.fillTertiary)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.code, size: 14, color: t.textTertiary),
-                const SizedBox(width: 6),
-                Text(
-                  language.isEmpty ? 'text' : language,
-                  style: TextStyle(fontSize: 13, color: t.textTertiary),
+          InkWell(
+            onTap: () => setState(() => _collapsed = !_collapsed),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(8, 4, 4, 4),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: _collapsed ? Colors.transparent : t.fillTertiary,
+                  ),
                 ),
-                const Spacer(),
-                LobeActionIcon(
-                  icon: Icons.copy_outlined,
-                  tooltip: copyTip,
-                  size: LobeActionIconSize.small,
-                  onTap: () {
-                    Clipboard.setData(ClipboardData(text: code));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(AppLocalizations.of(context).copiedCode),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(16),
-            child: HighlightView(
-              code.trimRight(),
-              language: language.isEmpty ? null : language,
-              theme: _theme(t),
-              padding: EdgeInsets.zero,
-              textStyle: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 12,
-                height: 1.6,
+              ),
+              child: Row(
+                children: [
+                  AnimatedRotation(
+                    turns: _collapsed ? -0.25 : 0,
+                    duration: const Duration(milliseconds: 160),
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 16,
+                      color: t.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    language.isEmpty ? 'text' : language,
+                    style: TextStyle(fontSize: 13, color: t.textTertiary),
+                  ),
+                  const Spacer(),
+                  LobeActionIcon(
+                    icon: Icons.copy_outlined,
+                    tooltip: copyTip,
+                    size: LobeActionIconSize.small,
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: code));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            AppLocalizations.of(context).copiedCode,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: _collapsed
+                ? const SizedBox(width: double.infinity)
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.all(16),
+                    child: HighlightView(
+                      code.trimRight(),
+                      language: language.isEmpty ? null : language,
+                      theme: _theme(t),
+                      padding: EdgeInsets.zero,
+                      textStyle: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                        height: 1.6,
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),

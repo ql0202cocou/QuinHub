@@ -46,6 +46,43 @@ void main() {
     );
     expect(find.textContaining('加粗'), findsWidgets);
   });
+
+  testWidgets('D: 代码块点头部折叠 / 展开', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: BlockedMarkdown(text: reply)),
+      ),
+    );
+    final code = find.textContaining('def hello', findRichText: true);
+    expect(code, findsOneWidget);
+
+    await tester.tap(find.text('python'));
+    await tester.pumpAndSettle();
+    expect(code, findsNothing);
+
+    await tester.tap(find.text('python'));
+    await tester.pumpAndSettle();
+    expect(code, findsOneWidget);
+  });
+
+  testWidgets('E: 流式追加内容后折叠状态保留', (tester) async {
+    const head = '前言\n\n```python\nprint(1)\n```\n\n';
+    Widget md(String text) => MaterialApp(
+      home: Scaffold(body: BlockedMarkdown(text: text)),
+    );
+    final code = find.textContaining('print(1)', findRichText: true);
+
+    await tester.pumpWidget(md(head));
+    await tester.tap(find.text('python'));
+    await tester.pumpAndSettle();
+    expect(code, findsNothing);
+
+    // 模拟流式：代码块之后继续到达新段落
+    await tester.pumpWidget(md('${head}后续内容'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('后续内容'), findsOneWidget);
+    expect(code, findsNothing);
+  });
 }
 
 /// 复用 BlockedMarkdown 的切分但不带 pre builder

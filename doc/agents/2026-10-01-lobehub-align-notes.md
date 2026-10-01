@@ -51,7 +51,11 @@
 - assistant 元信息行固定高 24，图标用 `AnimatedOpacity` + `IgnorePointer` 淡入，显隐不引起布局跳动；user 操作行用 `AnimatedSize` 展开。
 - 测试：`test/message_bubble_test.dart`（默认隐藏不可点、显示后可点、user 行展开、点按回调）；模拟器实测点按 / 再点收起 / 切换消息 / 点空白收起均正常。
 
+## 追加：代码块折叠
+
+- `_CodeBlock` 改为 StatefulWidget：点头部切换折叠，箭头旋转 + `AnimatedSize` 收起代码区，默认展开；头部内的复制按钮优先赢得手势，不触发折叠。
+- 折叠状态保存在 State 中。BlockedMarkdown 复用缓存的 widget 实例，流式追加时 block 位置不变，Element 与 State 都得以保留（`test/markdown_test.dart` 用例 E 验证）。
+
 ## 后续可补
 
-- 代码块折叠，需要时再做。
 - LobeHub 助手头像为 Fluent 3D emoji 图片，当前用系统 emoji 字体代替。
