@@ -6,7 +6,6 @@ import 'package:quinhub/state/profiles.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
 import 'package:quinhub/theme/tokens.dart';
 import 'package:quinhub/ui/lobe_button.dart';
-import 'package:quinhub/ui/lobe_group.dart';
 
 const _defaultBaseUrls = {
   'openai_compatible': 'https://api.openai.com/v1',
@@ -221,15 +220,11 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
                         : null,
                   ),
                   const SizedBox(height: LobeTokens.s3),
-                  LobeGroup(
-                    dividerIndent: 16,
-                    children: [
-                      SwitchListTile(
-                        title: Text(l10n.setDefault),
-                        value: _isDefault,
-                        onChanged: (v) => setState(() => _isDefault = v),
-                      ),
-                    ],
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.setDefault),
+                    value: _isDefault,
+                    onChanged: (v) => setState(() => _isDefault = v),
                   ),
                   const SizedBox(height: LobeTokens.s4),
                   Row(
@@ -240,7 +235,9 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
                               ? l10n.saveBeforeTest
                               : l10n.testConnection,
                           icon: Icons.wifi_tethering,
-                          variant: LobeButtonVariant.tonal,
+                          variant: LobeButtonVariant.fill,
+                          size: LobeButtonSize.large,
+                          block: true,
                           loading: _testing,
                           onPressed: (_isNew || _testing || _saving)
                               ? null
@@ -252,6 +249,8 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
                         child: LobeButton(
                           label: _saving ? l10n.saving : l10n.save,
                           icon: Icons.check,
+                          size: LobeButtonSize.large,
+                          block: true,
                           loading: _saving,
                           onPressed: (_saving || _testing) ? null : _save,
                         ),
@@ -265,26 +264,28 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: LobeTokens.s2),
-                    LobeGroup(
-                      dividerIndent: 16,
-                      children: [
-                        for (final m in _testedModels!)
-                          CheckboxListTile(
-                            dense: true,
-                            title: Text(
-                              m,
-                              style: const TextStyle(fontSize: 14),
+                    Card(
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          for (final m in _testedModels!)
+                            CheckboxListTile(
+                              dense: true,
+                              title: Text(
+                                m,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              value: _selectedModels.contains(m),
+                              onChanged: (v) => setState(() {
+                                if (v ?? false) {
+                                  _selectedModels.add(m);
+                                } else {
+                                  _selectedModels.remove(m);
+                                }
+                              }),
                             ),
-                            value: _selectedModels.contains(m),
-                            onChanged: (v) => setState(() {
-                              if (v ?? false) {
-                                _selectedModels.add(m);
-                              } else {
-                                _selectedModels.remove(m);
-                              }
-                            }),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ],

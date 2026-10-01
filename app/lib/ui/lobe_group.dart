@@ -1,44 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:quinhub/theme/tokens.dart';
 
-/// LobeUI List 风格分组卡片：圆角容器 + 行间 inset 分隔线。
+/// LobeHub 移动端列表分组：平铺无卡片。
+/// 组与组之间用 6px fillTertiary 横条分隔（[band]），可选 12/500 次级色小标题。
 class LobeGroup extends StatelessWidget {
   const LobeGroup({
     super.key,
     required this.children,
-    this.dividerIndent = 60,
-    this.margin,
+    this.title,
+    this.band = true,
   });
 
   final List<Widget> children;
+  final String? title;
 
-  /// 分隔线左缩进（对齐标题文字）。
-  final double dividerIndent;
-  final EdgeInsetsGeometry? margin;
+  /// 顶部是否画分隔横条（页面第一组通常传 false）。
+  final bool band;
 
   @override
   Widget build(BuildContext context) {
     final t = context.lobe;
-    return Padding(
-      padding: margin ?? EdgeInsets.zero,
-      child: Container(
-        decoration: BoxDecoration(
-          color: t.cardBg,
-          borderRadius: BorderRadius.circular(LobeTokens.rLg),
-          boxShadow: t.cardShadow,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < children.length; i++) ...[
-              if (i > 0)
-                Divider(height: 1, indent: dividerIndent, color: t.fill),
-              children[i],
-            ],
-          ],
-        ),
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (band) Container(height: 6, color: t.fillTertiary),
+        if (title != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              LobeTokens.s4,
+              LobeTokens.s4,
+              LobeTokens.s4,
+              LobeTokens.s1,
+            ),
+            child: Text(
+              title!,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: t.textSecondary,
+              ),
+            ),
+          ),
+        ...children,
+      ],
     );
   }
 }

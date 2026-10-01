@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:quinhub/theme/tokens.dart';
 
-/// LobeUI 风格小号标签（模型名、tokens 元信息等）。
+/// LobeUI Tag（middle）：高 22、左右 8、圆角 3、字号 12。
+/// 默认 fillTertiary 底 + textSecondary 字；传 [color] 时字用该色、底为其 6% 透明。
 class LobeTag extends StatelessWidget {
   const LobeTag({super.key, required this.text, this.color});
 
@@ -11,18 +12,23 @@ class LobeTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.lobe;
-    final fg = color ?? t.textTertiary;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      height: 22,
+      padding: const EdgeInsets.symmetric(horizontal: LobeTokens.s2),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: (color ?? t.textQuaternary).withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
+        color: color?.withValues(alpha: 0.06) ?? t.fillTertiary,
+        borderRadius: BorderRadius.circular(3),
       ),
       child: Text(
         text,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 11.5, color: fg),
+        style: TextStyle(
+          fontSize: 12,
+          height: 1.2,
+          color: color ?? t.textSecondary,
+        ),
       ),
     );
   }

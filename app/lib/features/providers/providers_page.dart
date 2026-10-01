@@ -5,9 +5,10 @@ import 'package:quinhub/bridge/api/profile.dart';
 import 'package:quinhub/state/profiles.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
 import 'package:quinhub/theme/tokens.dart';
+import 'package:quinhub/ui/lobe_action_icon.dart';
 import 'package:quinhub/ui/lobe_avatar.dart';
+import 'package:quinhub/ui/lobe_button.dart';
 import 'package:quinhub/ui/lobe_empty.dart';
-import 'package:quinhub/ui/lobe_group.dart';
 import 'package:quinhub/ui/lobe_list_tile.dart';
 
 String providerTypeLabel(String type) => switch (type) {
@@ -32,13 +33,15 @@ class ProvidersPage extends ConsumerWidget {
         title: Text(l10n.deleteProviderTitle(p.name)),
         content: Text(l10n.deleteProviderContent),
         actions: [
-          TextButton(
+          LobeButton(
+            label: l10n.cancel,
+            variant: LobeButtonVariant.text,
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancel),
           ),
-          FilledButton(
+          LobeButton(
+            label: l10n.delete,
+            variant: LobeButtonVariant.danger,
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -50,33 +53,30 @@ class ProvidersPage extends ConsumerWidget {
 
   Widget _tile(BuildContext context, WidgetRef ref, ProfileDto p) {
     final l10n = AppLocalizations.of(context);
-    return LobeListTile(
-      leading: LobeAvatar.seeded(
-        seed: p.id,
-        text: p.name.characters.first.toUpperCase(),
-        size: 34,
-      ),
+    return LobeListItem(
+      avatar: LobeAvatar(text: p.name),
       title: p.name,
-      subtitle: '${providerTypeLabel(p.providerType)} · ${p.baseUrl}',
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (p.isDefault)
-            Icon(Icons.star_rounded, size: 16, color: context.lobe.warning),
-          PopupMenuButton<String>(
-            onSelected: (v) {
-              if (v == 'edit') {
-                context.push('/settings/providers/${p.id}');
-              } else if (v == 'delete') {
-                _confirmDelete(context, ref, p);
-              }
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(value: 'edit', child: Text(l10n.edit)),
-              PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
-            ],
-          ),
+      description: '${providerTypeLabel(p.providerType)} · ${p.baseUrl}',
+      addon: p.isDefault
+          ? Icon(Icons.star_rounded, size: 14, color: context.lobe.warning)
+          : null,
+      trailing: PopupMenuButton<String>(
+        onSelected: (v) {
+          if (v == 'edit') {
+            context.push('/settings/providers/${p.id}');
+          } else if (v == 'delete') {
+            _confirmDelete(context, ref, p);
+          }
+        },
+        itemBuilder: (_) => [
+          PopupMenuItem(value: 'edit', child: Text(l10n.edit)),
+          PopupMenuItem(value: 'delete', child: Text(l10n.delete)),
         ],
+        child: LobeActionIcon(
+          icon: Icons.more_horiz,
+          tooltip: l10n.more,
+          onTap: null,
+        ),
       ),
       onTap: () => context.push('/settings/providers/${p.id}'),
     );
@@ -92,20 +92,21 @@ class ProvidersPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(l10n.loadFailed('$e'))),
         data: (list) => list.isEmpty
-            ? LobeEmpty(icon: Icons.key_outlined, message: l10n.noProviders)
+            ? LobeEmpty(emoji: '🔑', message: l10n.noProviders)
             : ListView(
-                padding: const EdgeInsets.all(LobeTokens.s3),
-                children: [
-                  LobeGroup(
-                    dividerIndent: 62,
-                    children: [for (final p in list) _tile(context, ref, p)],
-                  ),
-                ],
+                padding: const EdgeInsets.only(bottom: 88),
+                children: [for (final p in list) _tile(context, ref, p)],
               ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/settings/providers/new'),
-        child: const Icon(Icons.add),
+      floatingActionButton: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: context.lobe.shadowSecondary,
+        ),
+        child: FloatingActionButton(
+          onPressed: () => context.push('/settings/providers/new'),
+          child: const Icon(Icons.add, size: 22),
+        ),
       ),
     );
   }

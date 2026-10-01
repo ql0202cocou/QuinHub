@@ -100,7 +100,7 @@ class _Transcript extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    const t = LobeTokens.light;
+    final t = LobeTokens.light;
     final done = messages.where((m) => m.status == 'done').toList();
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -111,7 +111,7 @@ class _Transcript extends StatelessWidget {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: t.textPrimary,
+            color: t.text,
           ),
         ),
         const SizedBox(height: 4),
@@ -119,7 +119,7 @@ class _Transcript extends StatelessWidget {
           l10n.exportedBy,
           style: TextStyle(color: t.textTertiary, fontSize: 12),
         ),
-        Divider(height: 24, color: t.fill),
+        Divider(height: 24, color: t.borderSecondary),
         for (final m in done) ...[
           Row(
             children: [
@@ -129,7 +129,7 @@ class _Transcript extends StatelessWidget {
                   'assistant' => m.model ?? l10n.assistant,
                   _ => m.role,
                 },
-                color: m.role == 'user' ? t.brand : t.textTertiary,
+                color: m.role == 'user' ? t.info : t.textTertiary,
               ),
             ],
           ),
@@ -140,7 +140,7 @@ class _Transcript extends StatelessWidget {
                 if (m.images.isNotEmpty) l10n.imageCount(m.images.length),
                 m.text,
               ].join('\n').trim(),
-              style: TextStyle(fontSize: 14, height: 1.5, color: t.textPrimary),
+              style: TextStyle(fontSize: 14, height: 1.5, color: t.text),
             ),
           ),
         ],

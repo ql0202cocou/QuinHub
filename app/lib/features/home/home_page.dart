@@ -9,12 +9,11 @@ import 'package:quinhub/state/settings.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
 import 'package:quinhub/theme/tokens.dart';
 import 'package:quinhub/ui/lobe_avatar.dart';
+import 'package:quinhub/ui/lobe_button.dart';
 import 'package:quinhub/ui/lobe_empty.dart';
-import 'package:quinhub/ui/lobe_group.dart';
 import 'package:quinhub/ui/lobe_list_tile.dart';
 import 'package:quinhub/ui/lobe_search_bar.dart';
 import 'package:quinhub/ui/lobe_sheet.dart';
-import 'package:quinhub/ui/lobe_tag.dart';
 
 /// 会话列表首页：搜索 + 置顶/最近分区（LobeUI 风格）。
 class HomePage extends ConsumerStatefulWidget {
@@ -27,6 +26,9 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   final _search = TextEditingController();
   String _query = '';
+
+  /// 折叠的分区（LobeHub 首页分组可点击标题收起）。
+  final _collapsed = <String>{};
 
   @override
   void dispose() {
@@ -91,19 +93,16 @@ class _HomePageState extends ConsumerState<HomePage> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(l10n.renameConversation),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-        ),
+        content: TextField(controller: controller, autofocus: true),
         actions: [
-          TextButton(
+          LobeButton(
+            label: l10n.cancel,
+            variant: LobeButtonVariant.text,
             onPressed: () => Navigator.pop(ctx),
-            child: Text(l10n.cancel),
           ),
-          FilledButton(
+          LobeButton(
+            label: l10n.save,
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text(l10n.save),
           ),
         ],
       ),
@@ -164,13 +163,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                   content: Text(l10n.deleteConversationContent),
                   actions: [
-                    TextButton(
+                    LobeButton(
+                      label: l10n.cancel,
+                      variant: LobeButtonVariant.text,
                       onPressed: () => Navigator.pop(dctx, false),
-                      child: Text(l10n.cancel),
                     ),
-                    FilledButton(
+                    LobeButton(
+                      label: l10n.delete,
+                      variant: LobeButtonVariant.danger,
                       onPressed: () => Navigator.pop(dctx, true),
-                      child: Text(l10n.delete),
                     ),
                   ],
                 ),
@@ -185,79 +186,54 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _sectionLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        LobeTokens.s5,
-        LobeTokens.s3,
-        LobeTokens.s5,
-        LobeTokens.s1,
-      ),
-      child: Text(text, style: Theme.of(context).textTheme.labelMedium),
-    );
-  }
-
-  Widget _tile(BuildContext context, WidgetRef ref, ConversationDto c) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+  /// 分区标题（LobeHub 首页分组头）：高 38、14px、右侧折叠箭头。
+  Widget _sectionHeader(String key, String text, int count) {
     final t = context.lobe;
+    final collapsed = _collapsed.contains(key);
     return InkWell(
-      onTap: () => context.push('/chat/${c.id}'),
-      onLongPress: () => _menu(context, ref, c),
+      onTap: () => setState(
+        () => collapsed ? _collapsed.remove(key) : _collapsed.add(key),
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: LobeTokens.s4,
-          vertical: 10,
-        ),
+        padding: const EdgeInsets.fromLTRB(LobeTokens.s4, 8, 10, 8),
         child: Row(
           children: [
-            LobeAvatar.seeded(
-              seed: c.id,
-              icon: Icons.chat_bubble_outline_rounded,
-              size: 40,
+            Text(text, style: TextStyle(fontSize: 14, color: t.text)),
+            const SizedBox(width: LobeTokens.s1),
+            Text(
+              '$count',
+              style: TextStyle(fontSize: 12, color: t.textQuaternary),
             ),
-            const SizedBox(width: LobeTokens.s3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    c.title.isEmpty ? l10n.unnamedConversation : c.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (c.modelId != null) ...[
-                    const SizedBox(height: 4),
-                    LobeTag(text: c.modelId!),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: LobeTokens.s2),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _fmtTime(c.updatedAt.toInt()),
-                  style: theme.textTheme.labelSmall,
-                ),
-                if (c.pinned)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Icon(
-                      Icons.push_pin,
-                      size: 14,
-                      color: t.textTertiary,
-                    ),
-                  ),
-              ],
+            const Spacer(),
+            Icon(
+              collapsed ? Icons.expand_more : Icons.expand_less,
+              size: 18,
+              color: t.textTertiary,
             ),
           ],
         ),
       ),
+    );
+  }
+
+  List<Widget> _section(String key, String title, List<ConversationDto> items) {
+    if (items.isEmpty) return const [];
+    return [
+      _sectionHeader(key, title, items.length),
+      if (!_collapsed.contains(key))
+        for (final c in items) _tile(context, ref, c),
+    ];
+  }
+
+  Widget _tile(BuildContext context, WidgetRef ref, ConversationDto c) {
+    final l10n = AppLocalizations.of(context);
+    return LobeListItem(
+      avatar: LobeAvatar.seeded(seed: c.id),
+      title: c.title.isEmpty ? l10n.unnamedConversation : c.title,
+      description: c.modelId,
+      date: _fmtTime(c.updatedAt.toInt()),
+      onTap: () => context.push('/chat/${c.id}'),
+      onLongPress: () => _menu(context, ref, c),
     );
   }
 
@@ -269,18 +245,25 @@ class _HomePageState extends ConsumerState<HomePage> {
     final profiles = ref.watch(profilesProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('QuinHub'),
+        centerTitle: false,
+        titleSpacing: LobeTokens.s4,
+        title: const Text(
+          'QuinHub',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Icon(Icons.settings_outlined, size: 22),
+            color: context.lobe.textSecondary,
             onPressed: () => context.push('/settings'),
           ),
+          const SizedBox(width: LobeTokens.s1),
         ],
       ),
       body: core.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => LobeEmpty(
-          icon: Icons.error_outline,
+          emoji: '⚠️',
           message: l10n.initFailed('$e'),
           actionLabel: l10n.retry,
           onAction: () => ref.invalidate(coreInitProvider),
@@ -288,7 +271,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         data: (_) {
           if (profiles.valueOrNull?.isEmpty ?? true) {
             return LobeEmpty(
-              icon: Icons.key_outlined,
+              emoji: '🔑',
               message: l10n.noProvidersGuide,
               actionLabel: l10n.configureProviders,
               onAction: () => context.push('/settings/providers'),
@@ -304,11 +287,9 @@ class _HomePageState extends ConsumerState<HomePage> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  LobeTokens.s4,
-                  LobeTokens.s1,
-                  LobeTokens.s4,
-                  LobeTokens.s2,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: LobeTokens.s4,
+                  vertical: LobeTokens.s2,
                 ),
                 child: LobeSearchBar(
                   controller: _search,
@@ -319,7 +300,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               Expanded(
                 child: list.isEmpty
                     ? LobeEmpty(
-                        icon: Icons.chat_bubble_outline_rounded,
+                        emoji: q.isEmpty ? '💬' : '🔍',
                         message: q.isEmpty
                             ? l10n.noConversations
                             : l10n.noSearchResult,
@@ -327,30 +308,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                     : ListView(
                         padding: const EdgeInsets.only(bottom: 88),
                         children: [
-                          if (pinned.isNotEmpty) ...[
-                            _sectionLabel(l10n.pinnedSection),
-                            LobeGroup(
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: LobeTokens.s3,
-                              ),
-                              dividerIndent: 62,
-                              children: [
-                                for (final c in pinned) _tile(context, ref, c),
-                              ],
-                            ),
-                          ],
-                          if (recent.isNotEmpty) ...[
-                            _sectionLabel(l10n.recentSection),
-                            LobeGroup(
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: LobeTokens.s3,
-                              ),
-                              dividerIndent: 62,
-                              children: [
-                                for (final c in recent) _tile(context, ref, c),
-                              ],
-                            ),
-                          ],
+                          ..._section('pinned', l10n.pinnedSection, pinned),
+                          ..._section('recent', l10n.recentSection, recent),
                         ],
                       ),
               ),
@@ -358,9 +317,15 @@ class _HomePageState extends ConsumerState<HomePage> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _newConversation(context, ref),
-        child: const Icon(Icons.edit_note_rounded),
+      floatingActionButton: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: context.lobe.shadowSecondary,
+        ),
+        child: FloatingActionButton(
+          onPressed: () => _newConversation(context, ref),
+          child: const Icon(Icons.add_comment_outlined, size: 22),
+        ),
       ),
     );
   }

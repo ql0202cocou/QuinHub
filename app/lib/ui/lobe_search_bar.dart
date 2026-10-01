@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quinhub/theme/tokens.dart';
 
-/// LobeUI 风格 pill 搜索框。
+/// LobeUI SearchBar（移动端 filled 形态）：高 36、圆角 8、fillTertiary 底、无边框。
 class LobeSearchBar extends StatelessWidget {
   const LobeSearchBar({
     super.key,
@@ -17,24 +17,27 @@ class LobeSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.lobe;
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        hintText: hint,
-        prefixIcon: Icon(Icons.search, size: 20, color: t.textTertiary),
-        fillColor: t.fill,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(24),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(24),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(24),
-          borderSide: BorderSide(color: t.brand, width: 1.2),
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(LobeTokens.r),
+      borderSide: BorderSide.none,
+    );
+    return SizedBox(
+      height: 36,
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        style: TextStyle(fontSize: 14, color: t.text),
+        textAlignVertical: TextAlignVertical.center,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(fontSize: 14, color: t.textQuaternary),
+          prefixIcon: Icon(Icons.search, size: 16, color: t.textQuaternary),
+          prefixIconConstraints: const BoxConstraints(minWidth: 34),
+          fillColor: t.fillTertiary,
+          contentPadding: EdgeInsets.zero,
+          border: border,
+          enabledBorder: border,
+          focusedBorder: border,
         ),
       ),
     );

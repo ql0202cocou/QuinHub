@@ -34,31 +34,31 @@
 ## 3. 页面清单与关键交互
 
 ### 3.1 会话列表页 `/`
-- 顶部：标题「QuinHub」+ 设置入口；搜索框按标题过滤（2026-09-28 实装）。
-- 列表项：LobeAvatar（按会话 id 稳定取色的渐变圆角方块）+ 会话标题（首条消息自动生成，可改）+ 模型名 LobeTag + 时间；置顶/最近分区用 LobeGroup 分组卡片（置顶层在上）。
-- 交互：点按进聊天；**长按**弹出菜单（置顶/重命名/归档/删除）；右下 FAB 新建会话。
+- 顶部：左对齐粗体标题「QuinHub」+ 右侧设置入口；搜索框（高 36、圆角 8、浅灰填充）按标题过滤（2026-09-28 实装）。
+- 列表项（LobeListItem，平铺无卡片）：LobeAvatar.seeded（按会话 id 稳定取 emoji + 柔和底色）+ 会话标题（首条消息自动生成，可改）+ 模型名（12px 描述行）+ 右侧时间；置顶/最近两个分区，分区头可点击折叠（2026-10-01 对齐 LobeHub 首页分组）。
+- 交互：点按进聊天；**长按**弹出菜单（置顶/重命名/归档/删除）；右下黑色圆形 FAB 新建会话。
 - 空态：引导语 + 「去配置 API Key」按钮（未配置任何 Provider 时）。
 
 ### 3.2 聊天页 `/chat/:id`
-- 顶栏：返回、会话标题、当前模型 chip（品牌色浅底胶囊，点按弹模型选择器）、更多菜单（重命名/导出分享/归档/删除/会话参数）。
+- 顶栏（高 44）：返回、居中会话标题、更多菜单（会话参数/导出 Markdown/分享长图/用量统计）。模型选择器 2026-10-01 起移入输入卡片工具行（对齐 LobeHub）。
 - 消息列表：
-  - LobeHub 风格接近全宽消息块，头像在侧（用户/助手区分）；
-  - Markdown 渲染（代码块带语言标签 + 复制按钮）；
+  - 对齐 LobeHub 移动端：assistant 首行头像 + 名称，正文通栏无气泡；user 为右对齐浅灰气泡；
+  - Markdown 渲染（LobeUI chat 变体字号；代码块头部带语言名 + 复制按钮）；
   - 流式时最后一条增量渲染（block 级，见 decisions 决策三），带光标/加载指示；
   - **长按消息**：复制 / 重新生成（assistant）/ 编辑重发（user）/ 删除 / 多选导出（预留）。
 - 滚动：流式输出时若用户在底部则自动跟随；上滑后暂停跟随并显示「回到底部」浮钮。
-- 输入栏：
-  - 左侧 `+`：发图片（拍照/相册，压缩后 base64）；
-  - 多行输入，自适应高度；
-  - 右侧发送按钮；**流式中变为停止按钮**；
+- 输入卡片（圆角 12、细描边、轻阴影）：
+  - 上方多行输入（1–6 行自适应，16px）；
+  - 下方工具行：`+` 发图片（拍照/相册，压缩后 base64；非视觉模型禁用）→ 模型选择器（模型名 + 下拉箭头，点按弹模型列表）→ 右侧发送按钮；
+  - 发送按钮无内容时为灰色禁用态，有内容时为主色实底；**流式中变为停止按钮**；
   - 图片消息以缩略图挂在输入预览区，可移除。
 - 错误展示：失败消息内联错误条（按错误码文案 + 重试按钮），不打断会话。
 
 ### 3.3 设置 `/settings`
-- 分组列表（LobeHub 风格）：外观（主题：浅/深/跟随系统）、语言（中/英）、默认模型、提供商入口、关于（版本/隐私政策链接）。
+- 平铺分组列表（对齐 LobeHub「我 / 应用设置」页）：行高 56、20px 单色线框图标、右侧浅色箭头，组间 6px 灰色横条分隔。分组：提供商 / 已归档会话；外观（主题：浅/深/跟随系统）/ 语言（中/英）/ 默认模型；关于。
 
 ### 3.4 提供商列表与编辑 `/settings/providers*`
-- 列表：每个 Profile 显示名称、类型徽标（OpenAI 兼容 / Anthropic）、默认标记；右上加号新建。
+- 列表：每个 Profile 显示文字头像、名称、默认星标、「类型 · base_url」描述行、行尾更多菜单（编辑/删除）；右下 FAB 新建。
 - 编辑页：名称、类型、base_url（带默认值占位）、API Key（密文存储，显示掩码）、「测试连接」按钮（拉模型列表验证）、模型启用列表（勾选参与模型选择器的模型）、设为默认。
 - 删除需二次确认（提示关联会话将保留但不可继续对话）。
 
@@ -68,8 +68,8 @@
   - **分享长图**：会话渲染为长截图（滚动截屏方案），系统分享面板。
 
 ## 5. 全局细节
-- 主题：Material 3 为底，token 按 LobeUI 风格定制；浅/深/跟随系统。2026-10-01 升级为完整 token 体系：`app/lib/theme/tokens.dart` 定义 `LobeTokens`（ThemeExtension，品牌蓝梯度/功能色/文本色阶/容器色/圆角/间距/柔和卡片阴影，明暗双套），`app_theme.dart` 消费 tokens 输出组件主题；widget 侧经 `context.lobe` 取用（未注册时按亮度回落，兼容裸 MaterialApp 测试）。
-- UI 组件库（2026-10-01 落地 `app/lib/ui/`，仿 @lobehub/ui 形态、零新增依赖）：LobeGroup（分组卡片）、LobeListTile（图标色块列表项）、LobeButton（primary/tonal/text/danger）、LobeAvatar（渐变圆角方块，可 seeded 取色）、LobeTag、LobeSearchBar、showLobeSheet（统一底部弹层）、LobeEmpty（空状态）、LobeActionIcon（消息操作小图标）。新页面/弹层优先复用这些组件。
-- 消息形态（2026-09-28 定稿，2026-10-01 换皮）：assistant = 左侧 LobeAvatar + 全宽 Markdown + 底部 LobeTag 元信息 + 常驻操作行（复制/重新生成）；user = 右侧品牌蓝实底白字气泡（小角朝右下）+ 右对齐操作行（编辑重发/复制）；输入栏为胶囊形容器（+ 图片按钮内置），发送/停止为品牌蓝圆形按钮。
+- 主题：Material 3 为底，token 按 LobeUI 定制；浅/深/跟随系统。2026-10-01 二次对齐：`app/lib/theme/tokens.dart` 的 `LobeTokens`（ThemeExtension）数值取自 @lobehub/ui 5.51.2 源码并经 LobeHub 手机网页版实测核对——**主色为中性黑白**（浅色 #222 / 暗色 #EEE，非 antd 蓝）、gray 实色文本色阶、bgLayout/Container/Elevated 三层背景、fill 四级填充、圆角 4/6/8/12、控件高 24/32/40、分层阴影、代码高亮色；`app_theme.dart` 消费 tokens 输出组件主题（去掉 Material 水波纹，按压用 fillTertiary 底）；widget 侧经 `context.lobe` 取用（未注册时按亮度回落，兼容裸 MaterialApp 测试）。字体用系统默认。参照截图见 `doc/agents/assets/2026-10-01-lobehub-ref/`。
+- UI 组件库 `app/lib/ui/`（仿 @lobehub/ui 规格、零新增依赖）：LobeGroup（平铺分组：6px 横条 + 可选小标题）、LobeListTile（设置类菜单行）、LobeListItem（头像 + 标题 + 描述 + 日期的列表项）、LobeButton（primary/fill/text/danger × small/middle/large）、LobeAvatar（emoji / 文字 / 图标三种，`.seeded` 稳定取 emoji + 底色）、LobeTag、LobeSearchBar、showLobeSheet（标题 + 关闭按钮的底部弹层）、LobeEmpty（emoji 空状态）、LobeActionIcon（small/middle/large 无边框图标按钮）。新页面/弹层优先复用这些组件。
+- 消息形态（2026-09-28 定稿，2026-10-01 对齐 LobeHub）：assistant = 首行 28px 头像 +「助手」名称、正文通栏、底部 12px 元信息（模型 · tokens）+ 右侧复制/重新生成小图标；user = 右对齐浅灰气泡（圆角 12）+ 下方编辑重发/复制小图标。
 - 语言：中/英，跟随系统默认。
 - Haptics：发送/停止/删除等关键操作轻触感反馈。

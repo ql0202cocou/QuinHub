@@ -10,10 +10,12 @@ import 'package:quinhub/ui/lobe_action_icon.dart';
 import 'package:quinhub/ui/lobe_avatar.dart';
 import 'package:quinhub/ui/lobe_list_tile.dart';
 import 'package:quinhub/ui/lobe_sheet.dart';
-import 'package:quinhub/ui/lobe_tag.dart';
 
-/// 消息气泡（LobeUI 风格）：assistant 左侧头像 + 全宽 Markdown + 底部操作行；
-/// user 右侧品牌蓝气泡 + 右对齐操作行。长按仍有完整菜单。
+/// 消息块（对齐 LobeHub 移动端实测）：
+/// - assistant：首行 28px 头像 + 名称（14/500），正文通栏无气泡，
+///   底部 12px 元信息（模型 · tokens）+ 右侧小号操作图标；
+/// - user：右对齐 fillTertiary 浅灰气泡（圆角 12、内边距 8×12），下方小号操作图标。
+/// 长按仍有完整菜单。
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
@@ -75,12 +77,26 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  /// 助手头像：LobeAvatar 品牌色圆角方块。
-  static Widget assistantAvatar(BuildContext context, {double size = 28}) {
-    return LobeAvatar(
-      icon: Icons.smart_toy_outlined,
-      color: context.lobe.brand,
-      size: size,
+  /// 助手消息首行：28px 头像 + 名称。流式占位消息也复用。
+  static Widget assistantHeader(BuildContext context) {
+    final t = context.lobe;
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: LobeTokens.s2),
+      child: Row(
+        children: [
+          const LobeAvatar(emoji: '🤖', size: 28),
+          const SizedBox(width: LobeTokens.s2),
+          Text(
+            l10n.assistant,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: t.text,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -94,7 +110,7 @@ class MessageBubble extends StatelessWidget {
         children: [
           for (final img in message.images)
             ClipRRect(
-              borderRadius: BorderRadius.circular(LobeTokens.rMd),
+              borderRadius: BorderRadius.circular(LobeTokens.r),
               child: Image.file(
                 File('$appDir/$img'),
                 width: 160,
@@ -115,23 +131,21 @@ class MessageBubble extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Container(
-          margin: const EdgeInsets.only(left: 56),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          margin: const EdgeInsets.only(left: 36),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: t.brand,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(LobeTokens.rLg),
-              topRight: Radius.circular(LobeTokens.rLg),
-              bottomLeft: Radius.circular(LobeTokens.rLg),
-              bottomRight: Radius.circular(LobeTokens.rXs),
-            ),
+            color: t.fillTertiary,
+            borderRadius: BorderRadius.circular(LobeTokens.rLg),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               _images(),
               if (content.isNotEmpty)
-                Text(content, style: const TextStyle(color: Colors.white)),
+                Text(
+                  content,
+                  style: TextStyle(fontSize: 14, height: 1.6, color: t.text),
+                ),
             ],
           ),
         ),
@@ -145,12 +159,14 @@ class MessageBubble extends StatelessWidget {
                   LobeActionIcon(
                     icon: Icons.edit_outlined,
                     tooltip: l10n.editResend,
+                    size: LobeActionIconSize.small,
                     onTap: onEditResend!,
                   ),
                 if (message.text.isNotEmpty)
                   LobeActionIcon(
                     icon: Icons.copy_outlined,
                     tooltip: l10n.copy,
+                    size: LobeActionIconSize.small,
                     onTap: () => _copy(context),
                   ),
               ],
@@ -162,85 +178,82 @@ class MessageBubble extends StatelessWidget {
 
   Widget _assistantBlock(BuildContext context, String content) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+    final t = context.lobe;
     final errorText = _errorText(l10n);
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        assistantAvatar(context),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _images(),
-              if (content.isNotEmpty) BlockedMarkdown(text: content),
-              if (errorText != null)
-                Container(
-                  margin: const EdgeInsets.only(top: 6),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.errorContainer,
-                    borderRadius: BorderRadius.circular(LobeTokens.rMd),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 18,
-                        color: theme.colorScheme.onErrorContainer,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          errorText,
-                          style: TextStyle(
-                            color: theme.colorScheme.onErrorContainer,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
+        assistantHeader(context),
+        _images(),
+        if (content.isNotEmpty) BlockedMarkdown(text: content),
+        if (errorText != null)
+          Container(
+            margin: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: t.errorFillTertiary,
+              borderRadius: BorderRadius.circular(LobeTokens.r),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.error_outline, size: 16, color: t.error),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    errorText,
+                    style: TextStyle(color: t.error, fontSize: 13),
                   ),
                 ),
-              if (message.status == 'cancelled')
-                Text(l10n.cancelled, style: theme.textTheme.labelSmall),
-              const SizedBox(height: 2),
-              _metaAndActions(context),
-            ],
+              ],
+            ),
           ),
-        ),
+        if (message.status == 'cancelled')
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              l10n.cancelled,
+              style: TextStyle(fontSize: 12, color: t.textQuaternary),
+            ),
+          ),
+        const SizedBox(height: 6),
+        _metaAndActions(context),
       ],
     );
   }
 
-  /// 模型/tokens 元信息（LobeTag）+ 操作行（常驻小图标）。
+  /// 元信息（12px textQuaternary：模型 · tokens）+ 右侧小号操作图标。
   Widget _metaAndActions(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final t = context.lobe;
     final done = message.status == 'done';
+    final meta = [
+      if (message.model != null) message.model!,
+      if (message.tokensIn != null && message.tokensOut != null)
+        '${message.tokensIn}→${message.tokensOut} tokens',
+    ].join(' · ');
     return Row(
       children: [
         Expanded(
-          child: Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            children: [
-              if (message.model != null) LobeTag(text: message.model!),
-              if (message.tokensIn != null && message.tokensOut != null)
-                LobeTag(text: '${message.tokensIn}→${message.tokensOut} tok'),
-            ],
+          child: Text(
+            meta,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12, color: t.textQuaternary),
           ),
         ),
         if (done && message.text.isNotEmpty)
           LobeActionIcon(
             icon: Icons.copy_outlined,
             tooltip: l10n.copy,
+            size: LobeActionIconSize.small,
             onTap: () => _copy(context),
           ),
         if (done && onRegenerate != null)
           LobeActionIcon(
             icon: Icons.refresh,
             tooltip: l10n.regenerate,
+            size: LobeActionIconSize.small,
             onTap: onRegenerate!,
           ),
       ],
@@ -254,7 +267,7 @@ class MessageBubble extends StatelessWidget {
     return GestureDetector(
       onLongPress: () => _menu(context),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsets.symmetric(vertical: isUser ? 8 : 12),
         child: isUser
             ? _userBlock(context, content)
             : _assistantBlock(context, content),

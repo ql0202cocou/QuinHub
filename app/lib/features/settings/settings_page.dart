@@ -20,69 +20,62 @@ class SettingsPage extends ConsumerWidget {
         ref.watch(themeModeProvider).valueOrNull ?? ThemeMode.system;
     final locale = ref.watch(localeProvider).valueOrNull;
     final defaultModel = ref.watch(defaultModelProvider).valueOrNull;
-    final t = context.lobe;
-    final chevron = Icon(Icons.chevron_right, color: t.textQuaternary);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),
       body: ListView(
-        padding: const EdgeInsets.all(LobeTokens.s3),
+        padding: const EdgeInsets.only(bottom: 48),
         children: [
           LobeGroup(
+            band: false,
             children: [
               LobeListTile(
                 icon: Icons.key_outlined,
                 title: l10n.providers,
                 subtitle: l10n.providersSubtitle,
-                trailing: chevron,
+                arrow: true,
                 onTap: () => context.push('/settings/providers'),
               ),
               LobeListTile(
                 icon: Icons.archive_outlined,
-                iconColor: t.warning,
                 title: l10n.archivedConversations,
-                trailing: chevron,
+                arrow: true,
                 onTap: () => context.push('/settings/archived'),
               ),
             ],
           ),
-          const SizedBox(height: LobeTokens.s3),
           LobeGroup(
             children: [
               LobeListTile(
                 icon: Icons.palette_outlined,
-                iconColor: const Color(0xFF722ED1),
                 title: l10n.appearance,
                 subtitle: switch (themeMode) {
                   ThemeMode.light => l10n.light,
                   ThemeMode.dark => l10n.dark,
                   ThemeMode.system => l10n.followSystem,
                 },
-                trailing: chevron,
+                arrow: true,
                 onTap: () => _pickTheme(context, ref, themeMode),
               ),
               LobeListTile(
                 icon: Icons.language_outlined,
-                iconColor: const Color(0xFF13C2C2),
                 title: l10n.language,
                 subtitle: switch (locale?.languageCode) {
                   'zh' => '中文',
                   'en' => 'English',
                   _ => l10n.followSystem,
                 },
-                trailing: chevron,
+                arrow: true,
                 onTap: () => _pickLanguage(context, ref, locale),
               ),
               LobeListTile(
                 icon: Icons.smart_toy_outlined,
-                iconColor: const Color(0xFFFA8C16),
                 title: l10n.defaultModel,
                 subtitle: defaultModel?.modelId ?? l10n.defaultModelUnset,
-                trailing: chevron,
+                arrow: true,
                 onTap: () => _pickDefaultModel(context, ref, defaultModel),
               ),
             ],
           ),
-          const SizedBox(height: LobeTokens.s3),
           LobeGroup(
             children: [
               LobeListTile(
@@ -119,7 +112,7 @@ class SettingsPage extends ConsumerWidget {
             LobeListTile(
               title: label,
               trailing: m == cur
-                  ? Icon(Icons.check, size: 18, color: t.success)
+                  ? Icon(Icons.check, size: 18, color: t.primary)
                   : null,
               onTap: () => Navigator.pop(ctx, m),
             ),
@@ -148,7 +141,7 @@ class SettingsPage extends ConsumerWidget {
           LobeListTile(
             title: l10n.defaultModelUnset,
             trailing: cur == null
-                ? Icon(Icons.check, size: 18, color: t.success)
+                ? Icon(Icons.check, size: 18, color: t.primary)
                 : null,
             onTap: () async {
               Navigator.pop(ctx);
@@ -158,7 +151,7 @@ class SettingsPage extends ConsumerWidget {
           for (final p in profiles)
             if (p.enabledModels.isNotEmpty) ...[
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                 child: Text(
                   p.name,
                   style: Theme.of(context).textTheme.labelMedium,
@@ -168,7 +161,7 @@ class SettingsPage extends ConsumerWidget {
                 LobeListTile(
                   title: m,
                   trailing: (cur?.profileId == p.id && cur?.modelId == m)
-                      ? Icon(Icons.check, size: 18, color: t.success)
+                      ? Icon(Icons.check, size: 18, color: t.primary)
                       : null,
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -202,7 +195,7 @@ class SettingsPage extends ConsumerWidget {
             LobeListTile(
               title: label,
               trailing: v == (cur?.languageCode ?? 'system')
-                  ? Icon(Icons.check, size: 18, color: t.success)
+                  ? Icon(Icons.check, size: 18, color: t.primary)
                   : null,
               onTap: () => Navigator.pop(ctx, v),
             ),

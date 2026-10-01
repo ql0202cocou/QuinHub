@@ -18,6 +18,7 @@ import 'package:quinhub/state/conversations.dart';
 import 'package:quinhub/state/core.dart';
 import 'package:quinhub/state/profiles.dart';
 import 'package:quinhub/theme/tokens.dart';
+import 'package:quinhub/ui/lobe_action_icon.dart';
 import 'package:quinhub/ui/lobe_button.dart';
 import 'package:quinhub/ui/lobe_list_tile.dart';
 import 'package:quinhub/ui/lobe_sheet.dart';
@@ -223,7 +224,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   const Spacer(),
                   LobeButton(
                     label: l10n.cancel,
-                    variant: LobeButtonVariant.tonal,
+                    variant: LobeButtonVariant.fill,
                     onPressed: () => Navigator.pop(ctx),
                   ),
                   const SizedBox(width: 8),
@@ -304,7 +305,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 LobeListTile(
                   title: m,
                   trailing: (conv.modelId == m && conv.profileId == p.id)
-                      ? Icon(Icons.check, size: 18, color: t.success)
+                      ? Icon(Icons.check, size: 18, color: t.primary)
                       : null,
                   onTap: () async {
                     Navigator.pop(ctx);
@@ -342,16 +343,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     return Scaffold(
       appBar: AppBar(
         title: convAsync.when(
-          data: (c) => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                c.title.isEmpty ? l10n.newChat : c.title,
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 2),
-              _modelChip(c),
-            ],
+          data: (c) => Text(
+            c.title.isEmpty ? l10n.newChat : c.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           loading: () => const Text('…'),
           error: (_, _) => Text(l10n.conversation),
@@ -359,6 +354,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         actions: [
           PopupMenuButton<String>(
             tooltip: l10n.more,
+            icon: const Icon(Icons.more_horiz, size: 22),
             onSelected: (v) {
               final msgs = chatAsync.valueOrNull?.messages ?? [];
               final title = convAsync.valueOrNull?.title ?? '';
@@ -406,34 +402,34 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             ),
           ),
           if (_pendingImages.isNotEmpty) _imageChips(),
-          const Divider(height: 1),
-          _inputBar(chat?.streaming ?? false, vision),
+          _inputBar(chat?.streaming ?? false, vision, convAsync.valueOrNull),
         ],
       ),
     );
   }
 
-  /// AppBar 下的模型选择 chip（点击弹出模型列表）。
-  Widget _modelChip(ConversationDto c) {
+  /// 输入卡片工具行里的模型选择器（LobeHub：模型名 + 下拉箭头）。
+  Widget _modelSelector(ConversationDto? c) {
     final l10n = AppLocalizations.of(context);
     final t = context.lobe;
     return InkWell(
-      onTap: () => _pickModel(c),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: t.brand.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(20),
-        ),
+      onTap: c == null ? null : () => _pickModel(c),
+      borderRadius: BorderRadius.circular(LobeTokens.rSm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              c.modelId ?? l10n.selectModel,
-              style: TextStyle(fontSize: 12, color: t.brand),
+            Flexible(
+              child: Text(
+                c?.modelId ?? l10n.selectModel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 13, color: t.textSecondary),
+              ),
             ),
-            Icon(Icons.keyboard_arrow_down, size: 14, color: t.brand),
+            const SizedBox(width: 2),
+            Icon(Icons.keyboard_arrow_down, size: 16, color: t.textTertiary),
           ],
         ),
       ),
@@ -461,39 +457,36 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Widget _streamingBubble(ChatState chat) {
-    final theme = Theme.of(context);
+    final t = context.lobe;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          MessageBubble.assistantAvatar(context),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (chat.reasoningText.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      chat.reasoningText,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: context.lobe.textTertiary,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                if (chat.streamingText.isNotEmpty)
-                  BlockedMarkdown(text: chat.streamingText),
-                const SizedBox(height: 4),
-                const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+          MessageBubble.assistantHeader(context),
+          if (chat.reasoningText.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(left: 12),
+              decoration: BoxDecoration(
+                border: Border(left: BorderSide(color: t.border, width: 2)),
+              ),
+              child: Text(
+                chat.reasoningText,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.6,
+                  color: t.textTertiary,
                 ),
-              ],
+              ),
             ),
+          if (chat.streamingText.isNotEmpty)
+            BlockedMarkdown(text: chat.streamingText),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(strokeWidth: 2, color: t.primary),
           ),
         ],
       ),
@@ -536,77 +529,108 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
-  Widget _inputBar(bool streaming, bool vision) {
+  /// 输入卡片（对齐 LobeHub 移动端）：圆角 12 卡片，上为输入区（16px），
+  /// 下为工具行：图片「+」、模型选择器、发送/停止按钮。
+  Widget _inputBar(bool streaming, bool vision, ConversationDto? conv) {
     final l10n = AppLocalizations.of(context);
     final t = context.lobe;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        decoration: BoxDecoration(
+          color: t.bgElevated,
+          borderRadius: BorderRadius.circular(LobeTokens.rLg),
+          border: Border.all(color: dark ? t.fillSecondary : t.fill),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: dark ? 0.4 : 0.04),
+              offset: const Offset(0, 4),
+              blurRadius: 4,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: t.fill,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Tooltip(
-                      message: vision ? '' : l10n.modelNoVision,
-                      child: IconButton(
-                        onPressed: (streaming || !vision) ? null : _pickImage,
-                        icon: const Icon(
-                          Icons.add_photo_alternate_outlined,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: _input,
-                        maxLines: null,
-                        textInputAction: TextInputAction.newline,
-                        decoration: InputDecoration(
-                          hintText: l10n.inputHint,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          filled: false,
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 2,
-                            vertical: 11,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+            TextField(
+              controller: _input,
+              minLines: 1,
+              maxLines: 6,
+              textInputAction: TextInputAction.newline,
+              style: TextStyle(fontSize: 16, height: 1.4, color: t.text),
+              decoration: InputDecoration(
+                hintText: l10n.inputHint,
+                hintStyle: TextStyle(fontSize: 16, color: t.textQuaternary),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                isDense: true,
+                contentPadding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
               ),
             ),
-            const SizedBox(width: 8),
-            Material(
-              color: t.brand,
-              shape: const CircleBorder(),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: streaming
-                    ? () => ref.read(chatProvider(_id).notifier).cancel()
-                    : _send,
-                child: Padding(
-                  padding: const EdgeInsets.all(11),
-                  child: Icon(
-                    streaming ? Icons.stop_rounded : Icons.arrow_upward_rounded,
-                    size: 20,
-                    color: Colors.white,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 0, 8, 8),
+              child: Row(
+                children: [
+                  LobeActionIcon(
+                    icon: Icons.add,
+                    tooltip: vision ? l10n.gallery : l10n.modelNoVision,
+                    size: LobeActionIconSize.small,
+                    onTap: (streaming || !vision) ? null : _pickImage,
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: _modelSelector(conv),
+                    ),
+                  ),
+                  ValueListenableBuilder(
+                    valueListenable: _input,
+                    builder: (_, value, _) => _sendButton(
+                      streaming: streaming,
+                      canSend:
+                          value.text.trim().isNotEmpty ||
+                          _pendingImages.isNotEmpty,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// 发送 / 停止按钮：32×32 圆角 8；可发送或流式中为主色实底，否则灰底禁用态。
+  Widget _sendButton({required bool streaming, required bool canSend}) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.lobe;
+    final active = streaming || canSend;
+    return Semantics(
+      button: true,
+      label: streaming ? l10n.cancel : l10n.send,
+      child: Material(
+        color: active ? t.primary : t.fillTertiary,
+        borderRadius: BorderRadius.circular(LobeTokens.r),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: streaming
+              ? () => ref.read(chatProvider(_id).notifier).cancel()
+              : (canSend ? _send : null),
+          child: SizedBox(
+            width: 32,
+            height: 32,
+            child: Icon(
+              streaming ? Icons.stop_rounded : Icons.send_rounded,
+              size: 16,
+              color: active ? t.onPrimary : t.textQuaternary,
+            ),
+          ),
         ),
       ),
     );

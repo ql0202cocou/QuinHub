@@ -4,10 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:quinhub/bridge/api/conversation.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
 import 'package:quinhub/state/conversations.dart';
-import 'package:quinhub/theme/tokens.dart';
 import 'package:quinhub/ui/lobe_avatar.dart';
+import 'package:quinhub/ui/lobe_button.dart';
 import 'package:quinhub/ui/lobe_empty.dart';
-import 'package:quinhub/ui/lobe_group.dart';
 import 'package:quinhub/ui/lobe_list_tile.dart';
 import 'package:quinhub/ui/lobe_sheet.dart';
 
@@ -46,13 +45,15 @@ class ArchivedPage extends ConsumerWidget {
                   ),
                   content: Text(l10n.deleteConversationContent),
                   actions: [
-                    TextButton(
+                    LobeButton(
+                      label: l10n.cancel,
+                      variant: LobeButtonVariant.text,
                       onPressed: () => Navigator.pop(dctx, false),
-                      child: Text(l10n.cancel),
                     ),
-                    FilledButton(
+                    LobeButton(
+                      label: l10n.delete,
+                      variant: LobeButtonVariant.danger,
                       onPressed: () => Navigator.pop(dctx, true),
-                      child: Text(l10n.delete),
                     ),
                   ],
                 ),
@@ -81,32 +82,20 @@ class ArchivedPage extends ConsumerWidget {
         data: (list) {
           if (list.isEmpty) {
             return LobeEmpty(
-              icon: Icons.archive_outlined,
+              emoji: '🗃️',
               message: l10n.noArchivedConversations,
             );
           }
           return ListView(
-            padding: const EdgeInsets.all(LobeTokens.s3),
             children: [
-              LobeGroup(
-                dividerIndent: 62,
-                children: [
-                  for (final c in list)
-                    LobeListTile(
-                      leading: LobeAvatar.seeded(
-                        seed: c.id,
-                        icon: Icons.archive_outlined,
-                        size: 34,
-                      ),
-                      title: c.title.isEmpty
-                          ? l10n.unnamedConversation
-                          : c.title,
-                      subtitle: c.modelId,
-                      onTap: () => context.push('/chat/${c.id}'),
-                      onLongPress: () => _menu(context, ref, c),
-                    ),
-                ],
-              ),
+              for (final c in list)
+                LobeListItem(
+                  avatar: LobeAvatar.seeded(seed: c.id),
+                  title: c.title.isEmpty ? l10n.unnamedConversation : c.title,
+                  description: c.modelId,
+                  onTap: () => context.push('/chat/${c.id}'),
+                  onLongPress: () => _menu(context, ref, c),
+                ),
             ],
           );
         },
