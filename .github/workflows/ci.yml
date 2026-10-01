@@ -31,6 +31,8 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+      - name: format check
+        run: cd app && dart format --output=none --set-exit-if-changed lib test
       - name: analyze + test
         run: cd app && flutter pub get && flutter analyze && flutter test
 

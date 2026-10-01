@@ -28,7 +28,7 @@
 |---|---|
 | `rust-test` | `cargo test --workspace`（协议样本回放单测在此跑） |
 | `rust-lint` | fmt + clippy |
-| `flutter-test` | `flutter analyze` + `flutter test` |
+| `flutter-test` | `dart format --set-exit-if-changed lib test` + `flutter analyze` + `flutter test` |
 | `build-android` | debug APK（验证 Rust NDK 交叉编译链路） |
 | `build-ios` | macOS runner 构建（M5 前打通即可；无本地 Mac 时的 IPA 通道） |
 
