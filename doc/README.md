@@ -11,6 +11,7 @@ AI 代理首次接触仓库：`plan.md` → `decisions.md` → `engineering.md`�
 | 文档 | 内容 | 什么时候读 |
 |---|---|---|
 | [plan.md](agents/plan.md) | 第一期方案：架构、目录结构、数据模型概览、功能范围、里程碑、验收标准 | 动任何代码前 |
+| [plan-v2.md](agents/plan-v2.md) | 第二期方案（**草案，未立项**）：云同步服务端 + 助手体系的方向与取舍 | 评审第二期时 |
 | [decisions.md](agents/decisions.md) | 技术决策记录（ADR）：选型结论与利弊（决策一~四） | 做选型 / 改架构前 |
 | [protocol-mapping.md](agents/protocol-mapping.md) | OpenAI / Anthropic SSE 协议映射、错误码归一化、超时重试 | 碰网络 / 协议 / SSE |
 | [engineering.md](agents/engineering.md) | 工程与协作约定：版本锁定、生成物策略、CI、日志红线、同步方向 | 碰 git / CI / 依赖 / 日志 |
