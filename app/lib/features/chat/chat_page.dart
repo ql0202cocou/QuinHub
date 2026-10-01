@@ -17,6 +17,10 @@ import 'package:quinhub/state/chat.dart';
 import 'package:quinhub/state/conversations.dart';
 import 'package:quinhub/state/core.dart';
 import 'package:quinhub/state/profiles.dart';
+import 'package:quinhub/theme/tokens.dart';
+import 'package:quinhub/ui/lobe_button.dart';
+import 'package:quinhub/ui/lobe_list_tile.dart';
+import 'package:quinhub/ui/lobe_sheet.dart';
 import 'package:uuid/uuid.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
 
@@ -83,24 +87,22 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   Future<void> _pickImage() async {
     final l10n = AppLocalizations.of(context);
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: Text(l10n.gallery),
-              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: Text(l10n.camera),
-              onTap: () => Navigator.pop(ctx, ImageSource.camera),
-            ),
-          ],
-        ),
+    final source = await showLobeSheet<ImageSource>(
+      context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LobeListTile(
+            icon: Icons.photo_library_outlined,
+            title: l10n.gallery,
+            onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+          ),
+          LobeListTile(
+            icon: Icons.photo_camera_outlined,
+            title: l10n.camera,
+            onTap: () => Navigator.pop(ctx, ImageSource.camera),
+          ),
+        ],
       ),
     );
     if (source == null) return;
@@ -161,84 +163,77 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final systemPrompt = TextEditingController(
       text: p['system_prompt'] as String? ?? '',
     );
-    final action = await showModalBottomSheet<String>(
-      context: context,
+    final action = await showLobeSheet<String>(
+      context,
+      title: l10n.conversationParams,
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheet) => SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 12,
-              bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.conversationParams,
-                  style: Theme.of(ctx).textTheme.titleMedium,
+        builder: (ctx, setSheet) => SingleChildScrollView(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 4,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Temperature: ${temperature.toStringAsFixed(2)}'),
+              Slider(
+                value: temperature,
+                min: 0,
+                max: 2,
+                divisions: 40,
+                onChanged: (v) => setSheet(() => temperature = v),
+              ),
+              Text('Top P: ${topP.toStringAsFixed(2)}'),
+              Slider(
+                value: topP,
+                min: 0,
+                max: 1,
+                divisions: 20,
+                onChanged: (v) => setSheet(() => topP = v),
+              ),
+              TextField(
+                controller: maxTokens,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: l10n.maxTokens,
+                  hintText: l10n.maxTokensHint,
                 ),
-                const SizedBox(height: 8),
-                Text('Temperature: ${temperature.toStringAsFixed(2)}'),
-                Slider(
-                  value: temperature,
-                  min: 0,
-                  max: 2,
-                  divisions: 40,
-                  onChanged: (v) => setSheet(() => temperature = v),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: systemPrompt,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: l10n.systemPrompt,
+                  alignLabelWithHint: true,
                 ),
-                Text('Top P: ${topP.toStringAsFixed(2)}'),
-                Slider(
-                  value: topP,
-                  min: 0,
-                  max: 1,
-                  divisions: 20,
-                  onChanged: (v) => setSheet(() => topP = v),
-                ),
-                TextField(
-                  controller: maxTokens,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: l10n.maxTokens,
-                    hintText: l10n.maxTokensHint,
-                    border: const OutlineInputBorder(),
-                    isDense: true,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  LobeButton(
+                    label: l10n.resetToDefault,
+                    variant: LobeButtonVariant.text,
+                    onPressed: () => Navigator.pop(ctx, 'reset'),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: systemPrompt,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: l10n.systemPrompt,
-                    border: const OutlineInputBorder(),
-                    alignLabelWithHint: true,
+                  const Spacer(),
+                  LobeButton(
+                    label: l10n.cancel,
+                    variant: LobeButtonVariant.tonal,
+                    onPressed: () => Navigator.pop(ctx),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, 'reset'),
-                      child: Text(l10n.resetToDefault),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text(l10n.cancel),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(ctx, 'save'),
-                      child: Text(l10n.save),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  const SizedBox(width: 8),
+                  LobeButton(
+                    label: l10n.save,
+                    onPressed: () => Navigator.pop(ctx, 'save'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -287,42 +282,42 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _pickModel(ConversationDto conv) async {
+    final l10n = AppLocalizations.of(context);
     final profiles = ref.read(profilesProvider).valueOrNull ?? [];
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            for (final p in profiles)
-              if (p.enabledModels.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: Text(
-                    p.name,
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
+    final t = context.lobe;
+    await showLobeSheet<void>(
+      context,
+      title: l10n.selectModel,
+      builder: (ctx) => ListView(
+        shrinkWrap: true,
+        children: [
+          for (final p in profiles)
+            if (p.enabledModels.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+                child: Text(
+                  p.name,
+                  style: Theme.of(context).textTheme.labelMedium,
                 ),
-                for (final m in p.enabledModels)
-                  ListTile(
-                    dense: true,
-                    title: Text(m),
-                    trailing: (conv.modelId == m && conv.profileId == p.id)
-                        ? const Icon(Icons.check, color: Colors.green)
-                        : null,
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      await conversationSetModel(
-                        id: conv.id,
-                        profileId: p.id,
-                        modelId: m,
-                      );
-                      ref.invalidate(conversationProvider(_id));
-                    },
-                  ),
-              ],
-          ],
-        ),
+              ),
+              for (final m in p.enabledModels)
+                LobeListTile(
+                  title: m,
+                  trailing: (conv.modelId == m && conv.profileId == p.id)
+                      ? Icon(Icons.check, size: 18, color: t.success)
+                      : null,
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await conversationSetModel(
+                      id: conv.id,
+                      profileId: p.id,
+                      modelId: m,
+                    );
+                    ref.invalidate(conversationProvider(_id));
+                  },
+                ),
+            ],
+        ],
       ),
     );
   }
@@ -354,26 +349,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 c.title.isEmpty ? l10n.newChat : c.title,
                 style: const TextStyle(fontSize: 16),
               ),
-              InkWell(
-                onTap: () => _pickModel(c),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      c.modelId ?? l10n.selectModel,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 2),
+              _modelChip(c),
             ],
           ),
           loading: () => const Text('…'),
@@ -436,6 +413,33 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
+  /// AppBar 下的模型选择 chip（点击弹出模型列表）。
+  Widget _modelChip(ConversationDto c) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.lobe;
+    return InkWell(
+      onTap: () => _pickModel(c),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: t.brand.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              c.modelId ?? l10n.selectModel,
+              style: TextStyle(fontSize: 12, color: t.brand),
+            ),
+            Icon(Icons.keyboard_arrow_down, size: 14, color: t.brand),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _bubbleFor(
     List<MessageDto> messages,
     int i,
@@ -475,7 +479,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     child: Text(
                       chat.reasoningText,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.hintColor,
+                        color: context.lobe.textTertiary,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -509,7 +513,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           return Stack(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(LobeTokens.rSm),
                 child: Image.memory(
                   img.bytes,
                   width: 56,
@@ -534,7 +538,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   Widget _inputBar(bool streaming, bool vision) {
     final l10n = AppLocalizations.of(context);
-    final cs = Theme.of(context).colorScheme;
+    final t = context.lobe;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
@@ -544,8 +548,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(26),
+                  color: t.fill,
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -584,11 +588,23 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               ),
             ),
             const SizedBox(width: 8),
-            IconButton.filled(
-              onPressed: streaming
-                  ? () => ref.read(chatProvider(_id).notifier).cancel()
-                  : _send,
-              icon: Icon(streaming ? Icons.stop : Icons.send, size: 20),
+            Material(
+              color: t.brand,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: streaming
+                    ? () => ref.read(chatProvider(_id).notifier).cancel()
+                    : _send,
+                child: Padding(
+                  padding: const EdgeInsets.all(11),
+                  child: Icon(
+                    streaming ? Icons.stop_rounded : Icons.arrow_upward_rounded,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ),
           ],
         ),

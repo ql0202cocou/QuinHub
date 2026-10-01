@@ -1,120 +1,150 @@
 import 'package:flutter/material.dart';
+import 'package:quinhub/theme/tokens.dart';
 
-/// LobeHub 风格主题 token（plan.md：Material 3 为底，token 按 LobeHub 定制）。
-/// 设计语言：品牌蓝 + 大圆角 + 零阴影卡片 + 浅灰底衬白卡 + 克制留白。
+/// LobeUI 风格主题（Material 3 为底，组件主题统一消费 [LobeTokens]）。
 class AppTheme {
   AppTheme._();
 
-  /// 品牌色（LobeChat 标志性的 Ant 蓝）。
-  static const seed = Color(0xFF1677FF);
+  static ThemeData light() => _base(LobeTokens.light, Brightness.light);
+  static ThemeData dark() => _base(LobeTokens.dark, Brightness.dark);
 
-  static const _lightBg = Color(0xFFF4F5F7);
-  static const _lightCard = Colors.white;
-  static const _darkBg = Color(0xFF101014);
-  static const _darkCard = Color(0xFF1C1C21);
-
-  /// 大圆角 token：卡片 16 / 气泡 16（小角 4）/ 输入框 12 / 弹层 20。
-  static const radiusCard = 16.0;
-  static const radiusBubble = 16.0;
-  static const radiusInput = 12.0;
-  static const radiusSheet = 20.0;
-
-  static ThemeData light() {
-    final cs = ColorScheme.fromSeed(seedColor: seed)
-        .copyWith(surface: _lightCard);
-    return _base(cs, _lightBg, _lightCard);
-  }
-
-  static ThemeData dark() {
-    final cs = ColorScheme.fromSeed(
-      seedColor: seed,
-      brightness: Brightness.dark,
-    ).copyWith(surface: _darkCard);
-    return _base(cs, _darkBg, _darkCard);
-  }
-
-  static ThemeData _base(ColorScheme cs, Color bg, Color card) {
-    final rounded = BorderRadius.circular(radiusCard);
+  static ThemeData _base(LobeTokens t, Brightness brightness) {
+    final cs =
+        ColorScheme.fromSeed(
+          seedColor: LobeTokens.light.brand,
+          brightness: brightness,
+        ).copyWith(
+          primary: t.brand,
+          surface: t.cardBg,
+          onSurface: t.textPrimary,
+          onSurfaceVariant: t.textSecondary,
+          outlineVariant: t.fill,
+        );
+    final text = TextTheme(
+      titleLarge: TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
+        color: t.textPrimary,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: t.textPrimary,
+      ),
+      titleSmall: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: t.textPrimary,
+      ),
+      bodyLarge: TextStyle(fontSize: 16, color: t.textPrimary),
+      bodyMedium: TextStyle(fontSize: 15, color: t.textPrimary),
+      bodySmall: TextStyle(fontSize: 13, color: t.textSecondary),
+      labelLarge: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: t.textPrimary,
+      ),
+      labelMedium: TextStyle(fontSize: 12.5, color: t.textSecondary),
+      labelSmall: TextStyle(fontSize: 12, color: t.textTertiary),
+    );
     return ThemeData(
       useMaterial3: true,
       colorScheme: cs,
-      scaffoldBackgroundColor: bg,
+      textTheme: text,
+      scaffoldBackgroundColor: t.layoutBg,
+      extensions: [t],
       appBarTheme: AppBarTheme(
-        backgroundColor: bg,
+        backgroundColor: t.layoutBg,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(
-          fontSize: 17,
-          fontWeight: FontWeight.w600,
-          color: cs.onSurface,
-        ),
+        titleTextStyle: text.titleLarge,
       ),
       cardTheme: CardThemeData(
-        color: card,
+        color: t.cardBg,
         elevation: 0,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: rounded),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(LobeTokens.rLg),
+        ),
       ),
       listTileTheme: ListTileThemeData(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-        titleTextStyle: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-          color: cs.onSurface,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: LobeTokens.s4,
+          vertical: 2,
         ),
-        subtitleTextStyle: TextStyle(
-          fontSize: 12.5,
-          color: cs.onSurfaceVariant,
-        ),
+        titleTextStyle: text.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+        subtitleTextStyle: text.bodySmall,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.55),
+        fillColor: t.fill,
         isDense: true,
+        hintStyle: TextStyle(color: t.textQuaternary),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 12,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radiusInput),
+          borderRadius: BorderRadius.circular(LobeTokens.rMd),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radiusInput),
+          borderRadius: BorderRadius.circular(LobeTokens.rMd),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radiusInput),
-          borderSide: BorderSide(color: cs.primary, width: 1.2),
+          borderRadius: BorderRadius.circular(LobeTokens.rMd),
+          borderSide: BorderSide(color: t.brand, width: 1.2),
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: card,
-        shape: RoundedRectangleBorder(borderRadius: rounded),
+        backgroundColor: t.cardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(LobeTokens.rLg),
+        ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: card,
+        backgroundColor: t.cardBg,
         showDragHandle: true,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
-            top: Radius.circular(radiusSheet),
+            top: Radius.circular(LobeTokens.rXl),
           ),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(LobeTokens.rMd),
+        ),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: t.cardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(LobeTokens.rMd),
+        ),
       ),
-      dividerTheme: DividerThemeData(
-        space: 1,
-        thickness: 0.6,
-        color: cs.outlineVariant.withValues(alpha: 0.5),
+      dividerTheme: DividerThemeData(space: 1, thickness: 0.6, color: t.fill),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: t.brand,
+        thumbColor: t.brand,
+        overlayColor: t.brand.withValues(alpha: 0.12),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: t.brand,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(LobeTokens.rMd),
+          ),
+        ),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: t.brand,
+        foregroundColor: Colors.white,
+        elevation: 2,
+        shape: const CircleBorder(),
       ),
     );
   }

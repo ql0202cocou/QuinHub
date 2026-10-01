@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:quinhub/bridge/api/profile.dart';
 import 'package:quinhub/state/profiles.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
+import 'package:quinhub/theme/tokens.dart';
+import 'package:quinhub/ui/lobe_button.dart';
+import 'package:quinhub/ui/lobe_group.dart';
 
 const _defaultBaseUrls = {
   'openai_compatible': 'https://api.openai.com/v1',
@@ -168,57 +171,47 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
           : Form(
               key: _formKey,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(LobeTokens.s4),
                 children: [
                   TextFormField(
                     controller: _name,
-                    decoration: InputDecoration(
-                      labelText: l10n.fieldName,
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: InputDecoration(labelText: l10n.fieldName),
                     validator: (v) => v == null || v.trim().isEmpty
                         ? l10n.fieldRequired
                         : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: LobeTokens.s3),
                   DropdownButtonFormField<String>(
                     initialValue: _type,
-                    decoration: InputDecoration(
-                      labelText: l10n.fieldType,
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: InputDecoration(labelText: l10n.fieldType),
                     items: [
                       DropdownMenuItem(
                         value: 'openai_compatible',
                         child: Text(l10n.openaiCompatible),
                       ),
-                      DropdownMenuItem(
+                      const DropdownMenuItem(
                         value: 'anthropic',
                         child: Text('Anthropic'),
                       ),
                     ],
                     onChanged: _onTypeChanged,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: LobeTokens.s3),
                   TextFormField(
                     controller: _baseUrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.fieldBaseUrl,
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: InputDecoration(labelText: l10n.fieldBaseUrl),
                     keyboardType: TextInputType.url,
                     validator: (v) => v == null || v.trim().isEmpty
                         ? l10n.fieldRequired
                         : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: LobeTokens.s3),
                   TextFormField(
                     controller: _apiKey,
                     decoration: InputDecoration(
                       labelText: _isNew
                           ? l10n.fieldApiKey
                           : l10n.apiKeyKeepUnchanged,
-                      border: const OutlineInputBorder(),
                     ),
                     obscureText: true,
                     enableSuggestions: false,
@@ -227,63 +220,71 @@ class _ProviderEditPageState extends ConsumerState<ProviderEditPage> {
                         ? l10n.fieldRequired
                         : null,
                   ),
-                  SwitchListTile(
-                    title: Text(l10n.setDefault),
-                    value: _isDefault,
-                    onChanged: (v) => setState(() => _isDefault = v),
+                  const SizedBox(height: LobeTokens.s3),
+                  LobeGroup(
+                    dividerIndent: 16,
+                    children: [
+                      SwitchListTile(
+                        title: Text(l10n.setDefault),
+                        value: _isDefault,
+                        onChanged: (v) => setState(() => _isDefault = v),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: LobeTokens.s4),
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
+                        child: LobeButton(
+                          label: _isNew
+                              ? l10n.saveBeforeTest
+                              : l10n.testConnection,
+                          icon: Icons.wifi_tethering,
+                          variant: LobeButtonVariant.tonal,
+                          loading: _testing,
                           onPressed: (_isNew || _testing || _saving)
                               ? null
                               : _test,
-                          icon: _testing
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.wifi_tethering),
-                          label: Text(
-                            _isNew ? l10n.saveBeforeTest : l10n.testConnection,
-                          ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: LobeTokens.s3),
                       Expanded(
-                        child: FilledButton.icon(
+                        child: LobeButton(
+                          label: _saving ? l10n.saving : l10n.save,
+                          icon: Icons.check,
+                          loading: _saving,
                           onPressed: (_saving || _testing) ? null : _save,
-                          icon: const Icon(Icons.check),
-                          label: Text(_saving ? l10n.saving : l10n.save),
                         ),
                       ),
                     ],
                   ),
                   if (_testedModels != null) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: LobeTokens.s4),
                     Text(
                       l10n.enableModelsHint,
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
-                    const SizedBox(height: 4),
-                    ..._testedModels!.map(
-                      (m) => CheckboxListTile(
-                        dense: true,
-                        title: Text(m, style: const TextStyle(fontSize: 14)),
-                        value: _selectedModels.contains(m),
-                        onChanged: (v) => setState(() {
-                          if (v ?? false) {
-                            _selectedModels.add(m);
-                          } else {
-                            _selectedModels.remove(m);
-                          }
-                        }),
-                      ),
+                    const SizedBox(height: LobeTokens.s2),
+                    LobeGroup(
+                      dividerIndent: 16,
+                      children: [
+                        for (final m in _testedModels!)
+                          CheckboxListTile(
+                            dense: true,
+                            title: Text(
+                              m,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            value: _selectedModels.contains(m),
+                            onChanged: (v) => setState(() {
+                              if (v ?? false) {
+                                _selectedModels.add(m);
+                              } else {
+                                _selectedModels.remove(m);
+                              }
+                            }),
+                          ),
+                      ],
                     ),
                   ],
                 ],

@@ -4,6 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:quinhub/bridge/api/conversation.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
 import 'package:quinhub/state/conversations.dart';
+import 'package:quinhub/theme/tokens.dart';
+import 'package:quinhub/ui/lobe_avatar.dart';
+import 'package:quinhub/ui/lobe_empty.dart';
+import 'package:quinhub/ui/lobe_group.dart';
+import 'package:quinhub/ui/lobe_list_tile.dart';
+import 'package:quinhub/ui/lobe_sheet.dart';
 
 /// 已归档会话列表（设置 → 已归档会话）。
 class ArchivedPage extends ConsumerWidget {
@@ -11,60 +17,54 @@ class ArchivedPage extends ConsumerWidget {
 
   void _menu(BuildContext context, WidgetRef ref, ConversationDto c) {
     final l10n = AppLocalizations.of(context);
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.unarchive_outlined),
-              title: Text(l10n.unarchive),
-              onTap: () {
-                Navigator.pop(ctx);
-                ref
-                    .read(archivedConversationsProvider.notifier)
-                    .unarchive(c.id);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: Text(
-                l10n.delete,
-                style: const TextStyle(color: Colors.red),
-              ),
-              onTap: () async {
-                Navigator.pop(ctx);
-                final ok = await showDialog<bool>(
-                  context: context,
-                  builder: (dctx) => AlertDialog(
-                    title: Text(
-                      l10n.deleteConversationTitle(
-                        c.title.isEmpty ? l10n.unnamedConversation : c.title,
-                      ),
+    showLobeSheet<void>(
+      context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LobeListTile(
+            icon: Icons.unarchive_outlined,
+            title: l10n.unarchive,
+            onTap: () {
+              Navigator.pop(ctx);
+              ref.read(archivedConversationsProvider.notifier).unarchive(c.id);
+            },
+          ),
+          LobeListTile(
+            icon: Icons.delete_outline,
+            title: l10n.delete,
+            danger: true,
+            onTap: () async {
+              Navigator.pop(ctx);
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (dctx) => AlertDialog(
+                  title: Text(
+                    l10n.deleteConversationTitle(
+                      c.title.isEmpty ? l10n.unnamedConversation : c.title,
                     ),
-                    content: Text(l10n.deleteConversationContent),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(dctx, false),
-                        child: Text(l10n.cancel),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(dctx, true),
-                        child: Text(l10n.delete),
-                      ),
-                    ],
                   ),
-                );
-                if (ok == true) {
-                  await ref
-                      .read(archivedConversationsProvider.notifier)
-                      .remove(c.id);
-                }
-              },
-            ),
-          ],
-        ),
+                  content: Text(l10n.deleteConversationContent),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dctx, false),
+                      child: Text(l10n.cancel),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(dctx, true),
+                      child: Text(l10n.delete),
+                    ),
+                  ],
+                ),
+              );
+              if (ok == true) {
+                await ref
+                    .read(archivedConversationsProvider.notifier)
+                    .remove(c.id);
+              }
+            },
+          ),
+        ],
       ),
     );
   }
@@ -80,33 +80,32 @@ class ArchivedPage extends ConsumerWidget {
         error: (e, _) => Center(child: Text(l10n.loadFailed('$e'))),
         data: (list) {
           if (list.isEmpty) {
-            return Center(child: Text(l10n.noArchivedConversations));
+            return LobeEmpty(
+              icon: Icons.archive_outlined,
+              message: l10n.noArchivedConversations,
+            );
           }
           return ListView(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(LobeTokens.s3),
             children: [
-              Card(
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  children: [
-                    for (var i = 0; i < list.length; i++) ...[
-                      if (i > 0) const Divider(height: 1, indent: 56),
-                      ListTile(
-                        leading: const Icon(Icons.archive_outlined, size: 20),
-                        title: Text(
-                          list[i].title.isEmpty
-                              ? l10n.unnamedConversation
-                              : list[i].title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(list[i].modelId ?? ''),
-                        onTap: () => context.push('/chat/${list[i].id}'),
-                        onLongPress: () => _menu(context, ref, list[i]),
+              LobeGroup(
+                dividerIndent: 62,
+                children: [
+                  for (final c in list)
+                    LobeListTile(
+                      leading: LobeAvatar.seeded(
+                        seed: c.id,
+                        icon: Icons.archive_outlined,
+                        size: 34,
                       ),
-                    ],
-                  ],
-                ),
+                      title: c.title.isEmpty
+                          ? l10n.unnamedConversation
+                          : c.title,
+                      subtitle: c.modelId,
+                      onTap: () => context.push('/chat/${c.id}'),
+                      onLongPress: () => _menu(context, ref, c),
+                    ),
+                ],
               ),
             ],
           );

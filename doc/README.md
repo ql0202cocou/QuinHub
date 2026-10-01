@@ -2,7 +2,12 @@
 
 所有文档的唯一索引。修改代码前先读对应文档；修改了文档所描述的行为，必须回写对应文档。
 
-> **项目当前状态**：第一期（对话核心）已完成。盘点与 backlog 见 [agents/2026-09-23-v1-status-and-backlog.md](agents/2026-09-23-v1-status-and-backlog.md)（最新交接文档，优先阅读）。
+> **项目当前状态**：第一期（对话核心）已完成，2026-10-01 完成 LobeUI 风格 UI 翻新；第二期方案为草案未立项（见 plan-v2.md）。
+>
+> 交接文档按时间倒序阅读：
+> - [agents/2026-10-01-lobeui-refresh-notes.md](agents/2026-10-01-lobeui-refresh-notes.md)：**最新**，LobeUI token 体系 + `app/lib/ui/` 组件库 + 全页面换皮
+> - [agents/2026-09-27-macos-setup-notes.md](agents/2026-09-27-macos-setup-notes.md)：macOS 开发环境与 iOS 构建链路
+> - [agents/2026-09-23-v1-status-and-backlog.md](agents/2026-09-23-v1-status-and-backlog.md)：第一期盘点与 backlog
 
 ## AGENTS 文档
 

@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:quinhub/bridge/api/message.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
+import 'package:quinhub/theme/tokens.dart';
+import 'package:quinhub/ui/lobe_tag.dart';
 
 /// 导出会话为 Markdown 文件并调系统分享。
 Future<void> exportMarkdown(
@@ -88,6 +90,7 @@ Future<void> shareAsImage(
 }
 
 /// 离屏渲染用的紧凑对话视图（图片以占位符代替）。
+/// 导出图固定白底，色值取 LobeTokens.light 而非跟随 App 主题。
 class _Transcript extends StatelessWidget {
   const _Transcript({required this.title, required this.messages});
 
@@ -97,6 +100,7 @@ class _Transcript extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    const t = LobeTokens.light;
     final done = messages.where((m) => m.status == 'done').toList();
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -104,36 +108,28 @@ class _Transcript extends StatelessWidget {
       children: [
         Text(
           title.isEmpty ? l10n.newChat : title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: t.textPrimary,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           l10n.exportedBy,
-          style: const TextStyle(color: Colors.grey, fontSize: 12),
+          style: TextStyle(color: t.textTertiary, fontSize: 12),
         ),
-        const Divider(height: 24),
+        Divider(height: 24, color: t.fill),
         for (final m in done) ...[
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: m.role == 'user'
-                      ? Colors.blue.shade50
-                      : Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  switch (m.role) {
-                    'user' => l10n.user,
-                    'assistant' => m.model ?? l10n.assistant,
-                    _ => m.role,
-                  },
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              LobeTag(
+                text: switch (m.role) {
+                  'user' => l10n.user,
+                  'assistant' => m.model ?? l10n.assistant,
+                  _ => m.role,
+                },
+                color: m.role == 'user' ? t.brand : t.textTertiary,
               ),
             ],
           ),
@@ -144,7 +140,7 @@ class _Transcript extends StatelessWidget {
                 if (m.images.isNotEmpty) l10n.imageCount(m.images.length),
                 m.text,
               ].join('\n').trim(),
-              style: const TextStyle(fontSize: 14, height: 1.5),
+              style: TextStyle(fontSize: 14, height: 1.5, color: t.textPrimary),
             ),
           ),
         ],

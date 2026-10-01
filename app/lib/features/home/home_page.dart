@@ -7,8 +7,16 @@ import 'package:quinhub/state/core.dart';
 import 'package:quinhub/state/profiles.dart';
 import 'package:quinhub/state/settings.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
+import 'package:quinhub/theme/tokens.dart';
+import 'package:quinhub/ui/lobe_avatar.dart';
+import 'package:quinhub/ui/lobe_empty.dart';
+import 'package:quinhub/ui/lobe_group.dart';
+import 'package:quinhub/ui/lobe_list_tile.dart';
+import 'package:quinhub/ui/lobe_search_bar.dart';
+import 'package:quinhub/ui/lobe_sheet.dart';
+import 'package:quinhub/ui/lobe_tag.dart';
 
-/// 会话列表首页：搜索 + 置顶/最近分区（LobeHub 风格）。
+/// 会话列表首页：搜索 + 置顶/最近分区（LobeUI 风格）。
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
@@ -107,75 +115,145 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   void _menu(BuildContext context, WidgetRef ref, ConversationDto c) {
     final l10n = AppLocalizations.of(context);
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(
-                c.pinned ? Icons.push_pin : Icons.push_pin_outlined,
-              ),
-              title: Text(c.pinned ? l10n.unpin : l10n.pin),
-              onTap: () {
-                Navigator.pop(ctx);
-                ref
-                    .read(conversationsProvider.notifier)
-                    .togglePin(c.id, c.pinned);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.drive_file_rename_outline),
-              title: Text(l10n.rename),
-              onTap: () {
-                Navigator.pop(ctx);
-                _rename(context, ref, c);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.archive_outlined),
-              title: Text(l10n.archive),
-              onTap: () {
-                Navigator.pop(ctx);
-                ref
-                    .read(conversationsProvider.notifier)
-                    .toggleArchive(c.id, c.archived);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: Text(
-                l10n.delete,
-                style: const TextStyle(color: Colors.red),
-              ),
-              onTap: () async {
-                Navigator.pop(ctx);
-                final ok = await showDialog<bool>(
-                  context: context,
-                  builder: (dctx) => AlertDialog(
-                    title: Text(
-                      l10n.deleteConversationTitle(
-                        c.title.isEmpty ? l10n.unnamedConversation : c.title,
-                      ),
+    showLobeSheet<void>(
+      context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LobeListTile(
+            icon: c.pinned ? Icons.push_pin : Icons.push_pin_outlined,
+            title: c.pinned ? l10n.unpin : l10n.pin,
+            onTap: () {
+              Navigator.pop(ctx);
+              ref
+                  .read(conversationsProvider.notifier)
+                  .togglePin(c.id, c.pinned);
+            },
+          ),
+          LobeListTile(
+            icon: Icons.drive_file_rename_outline,
+            title: l10n.rename,
+            onTap: () {
+              Navigator.pop(ctx);
+              _rename(context, ref, c);
+            },
+          ),
+          LobeListTile(
+            icon: Icons.archive_outlined,
+            title: l10n.archive,
+            onTap: () {
+              Navigator.pop(ctx);
+              ref
+                  .read(conversationsProvider.notifier)
+                  .toggleArchive(c.id, c.archived);
+            },
+          ),
+          LobeListTile(
+            icon: Icons.delete_outline,
+            title: l10n.delete,
+            danger: true,
+            onTap: () async {
+              Navigator.pop(ctx);
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (dctx) => AlertDialog(
+                  title: Text(
+                    l10n.deleteConversationTitle(
+                      c.title.isEmpty ? l10n.unnamedConversation : c.title,
                     ),
-                    content: Text(l10n.deleteConversationContent),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(dctx, false),
-                        child: Text(l10n.cancel),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(dctx, true),
-                        child: Text(l10n.delete),
-                      ),
-                    ],
                   ),
-                );
-                if (ok == true) {
-                  await ref.read(conversationsProvider.notifier).remove(c.id);
-                }
-              },
+                  content: Text(l10n.deleteConversationContent),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dctx, false),
+                      child: Text(l10n.cancel),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(dctx, true),
+                      child: Text(l10n.delete),
+                    ),
+                  ],
+                ),
+              );
+              if (ok == true) {
+                await ref.read(conversationsProvider.notifier).remove(c.id);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        LobeTokens.s5,
+        LobeTokens.s3,
+        LobeTokens.s5,
+        LobeTokens.s1,
+      ),
+      child: Text(text, style: Theme.of(context).textTheme.labelMedium),
+    );
+  }
+
+  Widget _tile(BuildContext context, WidgetRef ref, ConversationDto c) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final t = context.lobe;
+    return InkWell(
+      onTap: () => context.push('/chat/${c.id}'),
+      onLongPress: () => _menu(context, ref, c),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: LobeTokens.s4,
+          vertical: 10,
+        ),
+        child: Row(
+          children: [
+            LobeAvatar.seeded(
+              seed: c.id,
+              icon: Icons.chat_bubble_outline_rounded,
+              size: 40,
+            ),
+            const SizedBox(width: LobeTokens.s3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    c.title.isEmpty ? l10n.unnamedConversation : c.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (c.modelId != null) ...[
+                    const SizedBox(height: 4),
+                    LobeTag(text: c.modelId!),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: LobeTokens.s2),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  _fmtTime(c.updatedAt.toInt()),
+                  style: theme.textTheme.labelSmall,
+                ),
+                if (c.pinned)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Icon(
+                      Icons.push_pin,
+                      size: 14,
+                      color: t.textTertiary,
+                    ),
+                  ),
+              ],
             ),
           ],
         ),
@@ -183,58 +261,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _sectionLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.labelMedium
-            ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-      ),
-    );
-  }
-
-  Widget _tile(BuildContext context, WidgetRef ref, ConversationDto c) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return ListTile(
-      leading: CircleAvatar(
-        radius: 19,
-        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.10),
-        child: Icon(
-          Icons.chat_bubble_outline_rounded,
-          size: 17,
-          color: theme.colorScheme.primary,
-        ),
-      ),
-      title: Text(
-        c.title.isEmpty ? l10n.unnamedConversation : c.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(c.modelId ?? '', maxLines: 1),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(_fmtTime(c.updatedAt.toInt()), style: theme.textTheme.bodySmall),
-          if (c.pinned)
-            Icon(
-              Icons.push_pin,
-              size: 14,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-        ],
-      ),
-      onTap: () => context.push('/chat/${c.id}'),
-      onLongPress: () => _menu(context, ref, c),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final core = ref.watch(coreInitProvider);
     final convs = ref.watch(conversationsProvider);
     final profiles = ref.watch(profilesProvider);
@@ -250,50 +279,19 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
       body: core.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(l10n.initFailed('$e'), textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () => ref.invalidate(coreInitProvider),
-                child: Text(l10n.retry),
-              ),
-            ],
-          ),
+        error: (e, _) => LobeEmpty(
+          icon: Icons.error_outline,
+          message: l10n.initFailed('$e'),
+          actionLabel: l10n.retry,
+          onAction: () => ref.invalidate(coreInitProvider),
         ),
         data: (_) {
           if (profiles.valueOrNull?.isEmpty ?? true) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: theme.colorScheme.primary.withValues(
-                      alpha: 0.10,
-                    ),
-                    child: Icon(
-                      Icons.key_outlined,
-                      size: 34,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    l10n.noProvidersGuide,
-                    style: theme.textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  FilledButton.icon(
-                    onPressed: () => context.push('/settings/providers'),
-                    icon: const Icon(Icons.add),
-                    label: Text(l10n.configureProviders),
-                  ),
-                ],
-              ),
+            return LobeEmpty(
+              icon: Icons.key_outlined,
+              message: l10n.noProvidersGuide,
+              actionLabel: l10n.configureProviders,
+              onAction: () => context.push('/settings/providers'),
             );
           }
           final all = convs.valueOrNull ?? [];
@@ -306,59 +304,51 @@ class _HomePageState extends ConsumerState<HomePage> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                child: TextField(
+                padding: const EdgeInsets.fromLTRB(
+                  LobeTokens.s4,
+                  LobeTokens.s1,
+                  LobeTokens.s4,
+                  LobeTokens.s2,
+                ),
+                child: LobeSearchBar(
                   controller: _search,
+                  hint: l10n.searchChats,
                   onChanged: (v) => setState(() => _query = v),
-                  decoration: InputDecoration(
-                    hintText: l10n.searchChats,
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                  ),
                 ),
               ),
               Expanded(
                 child: list.isEmpty
-                    ? Center(
-                        child: Text(
-                          q.isEmpty
-                              ? l10n.noConversations
-                              : l10n.noSearchResult,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+                    ? LobeEmpty(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        message: q.isEmpty
+                            ? l10n.noConversations
+                            : l10n.noSearchResult,
                       )
                     : ListView(
                         padding: const EdgeInsets.only(bottom: 88),
                         children: [
                           if (pinned.isNotEmpty) ...[
                             _sectionLabel(l10n.pinnedSection),
-                            Card(
+                            LobeGroup(
                               margin: const EdgeInsets.symmetric(
-                                horizontal: 12,
+                                horizontal: LobeTokens.s3,
                               ),
-                              clipBehavior: Clip.antiAlias,
-                              child: Column(
-                                children: [
-                                  for (final c in pinned)
-                                    _tile(context, ref, c),
-                                ],
-                              ),
+                              dividerIndent: 62,
+                              children: [
+                                for (final c in pinned) _tile(context, ref, c),
+                              ],
                             ),
                           ],
                           if (recent.isNotEmpty) ...[
                             _sectionLabel(l10n.recentSection),
-                            Card(
+                            LobeGroup(
                               margin: const EdgeInsets.symmetric(
-                                horizontal: 12,
+                                horizontal: LobeTokens.s3,
                               ),
-                              clipBehavior: Clip.antiAlias,
-                              child: Column(
-                                children: [
-                                  for (final c in recent)
-                                    _tile(context, ref, c),
-                                ],
-                              ),
+                              dividerIndent: 62,
+                              children: [
+                                for (final c in recent) _tile(context, ref, c),
+                              ],
                             ),
                           ],
                         ],
@@ -370,7 +360,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _newConversation(context, ref),
-        child: const Icon(Icons.add_comment_outlined),
+        child: const Icon(Icons.edit_note_rounded),
       ),
     );
   }

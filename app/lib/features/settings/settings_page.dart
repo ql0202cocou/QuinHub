@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:quinhub/state/profiles.dart';
 import 'package:quinhub/state/settings.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
+import 'package:quinhub/theme/tokens.dart';
+import 'package:quinhub/ui/lobe_group.dart';
+import 'package:quinhub/ui/lobe_list_tile.dart';
+import 'package:quinhub/ui/lobe_sheet.dart';
 
 /// 设置首页。
 class SettingsPage extends ConsumerWidget {
@@ -16,82 +20,78 @@ class SettingsPage extends ConsumerWidget {
         ref.watch(themeModeProvider).valueOrNull ?? ThemeMode.system;
     final locale = ref.watch(localeProvider).valueOrNull;
     final defaultModel = ref.watch(defaultModelProvider).valueOrNull;
+    final t = context.lobe;
+    final chevron = Icon(Icons.chevron_right, color: t.textQuaternary);
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),
       body: ListView(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(LobeTokens.s3),
         children: [
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.key_outlined),
-                  title: Text(l10n.providers),
-                  subtitle: Text(l10n.providersSubtitle),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/settings/providers'),
-                ),
-                const Divider(height: 1, indent: 56),
-                ListTile(
-                  leading: const Icon(Icons.archive_outlined),
-                  title: Text(l10n.archivedConversations),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/settings/archived'),
-                ),
-              ],
-            ),
+          LobeGroup(
+            children: [
+              LobeListTile(
+                icon: Icons.key_outlined,
+                title: l10n.providers,
+                subtitle: l10n.providersSubtitle,
+                trailing: chevron,
+                onTap: () => context.push('/settings/providers'),
+              ),
+              LobeListTile(
+                icon: Icons.archive_outlined,
+                iconColor: t.warning,
+                title: l10n.archivedConversations,
+                trailing: chevron,
+                onTap: () => context.push('/settings/archived'),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.palette_outlined),
-                  title: Text(l10n.appearance),
-                  subtitle: Text(switch (themeMode) {
-                    ThemeMode.light => l10n.light,
-                    ThemeMode.dark => l10n.dark,
-                    ThemeMode.system => l10n.followSystem,
-                  }),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _pickTheme(context, ref, themeMode),
-                ),
-                const Divider(height: 1, indent: 56),
-                ListTile(
-                  leading: const Icon(Icons.language_outlined),
-                  title: Text(l10n.language),
-                  subtitle: Text(switch (locale?.languageCode) {
-                    'zh' => '中文',
-                    'en' => 'English',
-                    _ => l10n.followSystem,
-                  }),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _pickLanguage(context, ref, locale),
-                ),
-                const Divider(height: 1, indent: 56),
-                ListTile(
-                  leading: const Icon(Icons.smart_toy_outlined),
-                  title: Text(l10n.defaultModel),
-                  subtitle: Text(
-                    defaultModel?.modelId ?? l10n.defaultModelUnset,
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _pickDefaultModel(context, ref, defaultModel),
-                ),
-              ],
-            ),
+          const SizedBox(height: LobeTokens.s3),
+          LobeGroup(
+            children: [
+              LobeListTile(
+                icon: Icons.palette_outlined,
+                iconColor: const Color(0xFF722ED1),
+                title: l10n.appearance,
+                subtitle: switch (themeMode) {
+                  ThemeMode.light => l10n.light,
+                  ThemeMode.dark => l10n.dark,
+                  ThemeMode.system => l10n.followSystem,
+                },
+                trailing: chevron,
+                onTap: () => _pickTheme(context, ref, themeMode),
+              ),
+              LobeListTile(
+                icon: Icons.language_outlined,
+                iconColor: const Color(0xFF13C2C2),
+                title: l10n.language,
+                subtitle: switch (locale?.languageCode) {
+                  'zh' => '中文',
+                  'en' => 'English',
+                  _ => l10n.followSystem,
+                },
+                trailing: chevron,
+                onTap: () => _pickLanguage(context, ref, locale),
+              ),
+              LobeListTile(
+                icon: Icons.smart_toy_outlined,
+                iconColor: const Color(0xFFFA8C16),
+                title: l10n.defaultModel,
+                subtitle: defaultModel?.modelId ?? l10n.defaultModelUnset,
+                trailing: chevron,
+                onTap: () => _pickDefaultModel(context, ref, defaultModel),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: Text(l10n.about),
-              subtitle: const Text('v1.0.0 · M5'),
-              enabled: false,
-            ),
+          const SizedBox(height: LobeTokens.s3),
+          LobeGroup(
+            children: [
+              LobeListTile(
+                icon: Icons.info_outline,
+                title: l10n.about,
+                subtitle: 'v1.0.0 · M5',
+                enabled: false,
+              ),
+            ],
           ),
         ],
       ),
@@ -104,20 +104,22 @@ class SettingsPage extends ConsumerWidget {
     ThemeMode cur,
   ) async {
     final l10n = AppLocalizations.of(context);
-    final mode = await showDialog<ThemeMode>(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: Text(l10n.appearance),
+    final t = context.lobe;
+    final mode = await showLobeSheet<ThemeMode>(
+      context,
+      title: l10n.appearance,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           for (final (m, label) in [
             (ThemeMode.system, l10n.followSystem),
             (ThemeMode.light, l10n.light),
             (ThemeMode.dark, l10n.dark),
           ])
-            ListTile(
-              title: Text(label),
+            LobeListTile(
+              title: label,
               trailing: m == cur
-                  ? const Icon(Icons.check, color: Colors.green)
+                  ? Icon(Icons.check, size: 18, color: t.success)
                   : null,
               onTap: () => Navigator.pop(ctx, m),
             ),
@@ -135,49 +137,46 @@ class SettingsPage extends ConsumerWidget {
     ({String profileId, String modelId})? cur,
   ) async {
     final l10n = AppLocalizations.of(context);
+    final t = context.lobe;
     final profiles = ref.read(profilesProvider).valueOrNull ?? [];
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            ListTile(
-              title: Text(l10n.defaultModelUnset),
-              trailing: cur == null
-                  ? const Icon(Icons.check, color: Colors.green)
-                  : null,
-              onTap: () async {
-                Navigator.pop(ctx);
-                await ref.read(defaultModelProvider.notifier).clear();
-              },
-            ),
-            for (final p in profiles)
-              if (p.enabledModels.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: Text(
-                    p.name,
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
+    await showLobeSheet<void>(
+      context,
+      title: l10n.defaultModel,
+      builder: (ctx) => ListView(
+        shrinkWrap: true,
+        children: [
+          LobeListTile(
+            title: l10n.defaultModelUnset,
+            trailing: cur == null
+                ? Icon(Icons.check, size: 18, color: t.success)
+                : null,
+            onTap: () async {
+              Navigator.pop(ctx);
+              await ref.read(defaultModelProvider.notifier).clear();
+            },
+          ),
+          for (final p in profiles)
+            if (p.enabledModels.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+                child: Text(
+                  p.name,
+                  style: Theme.of(context).textTheme.labelMedium,
                 ),
-                for (final m in p.enabledModels)
-                  ListTile(
-                    dense: true,
-                    title: Text(m),
-                    trailing: (cur?.profileId == p.id && cur?.modelId == m)
-                        ? const Icon(Icons.check, color: Colors.green)
-                        : null,
-                    onTap: () async {
-                      Navigator.pop(ctx);
-                      await ref
-                          .read(defaultModelProvider.notifier)
-                          .set(p.id, m);
-                    },
-                  ),
-              ],
-          ],
-        ),
+              ),
+              for (final m in p.enabledModels)
+                LobeListTile(
+                  title: m,
+                  trailing: (cur?.profileId == p.id && cur?.modelId == m)
+                      ? Icon(Icons.check, size: 18, color: t.success)
+                      : null,
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await ref.read(defaultModelProvider.notifier).set(p.id, m);
+                  },
+                ),
+            ],
+        ],
       ),
     );
   }
@@ -188,20 +187,22 @@ class SettingsPage extends ConsumerWidget {
     Locale? cur,
   ) async {
     final l10n = AppLocalizations.of(context);
-    final lang = await showDialog<String>(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: Text(l10n.language),
+    final t = context.lobe;
+    final lang = await showLobeSheet<String>(
+      context,
+      title: l10n.language,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           for (final (v, label) in [
             ('system', l10n.followSystem),
             ('zh', '中文'),
             ('en', 'English'),
           ])
-            ListTile(
-              title: Text(label),
+            LobeListTile(
+              title: label,
               trailing: v == (cur?.languageCode ?? 'system')
-                  ? const Icon(Icons.check, color: Colors.green)
+                  ? Icon(Icons.check, size: 18, color: t.success)
                   : null,
               onTap: () => Navigator.pop(ctx, v),
             ),

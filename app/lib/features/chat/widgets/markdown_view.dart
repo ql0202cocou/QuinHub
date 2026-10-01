@@ -5,6 +5,8 @@ import 'package:flutter_highlight/themes/atom-one-dark.dart';
 import 'package:flutter_highlight/themes/github.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
+import 'package:quinhub/theme/tokens.dart';
+import 'package:quinhub/ui/lobe_action_icon.dart';
 
 /// Blocked 增量 Markdown（decisions.md 决策三）：
 /// 文本按 block 切分（代码块感知），相同内容的 block 复用同一 widget 实例，
@@ -23,6 +25,13 @@ class BlockedMarkdown extends StatefulWidget {
 
 class _BlockedMarkdownState extends State<BlockedMarkdown> {
   final _cache = <String, Widget>{};
+
+  @override
+  void didChangeDependencies() {
+    // 缓存的 widget 捕获了主题色（代码块/引用/链接），主题切换时清空重建
+    _cache.clear();
+    super.didChangeDependencies();
+  }
 
   List<String> _split(String text) {
     final blocks = <String>[];
@@ -45,6 +54,7 @@ class _BlockedMarkdownState extends State<BlockedMarkdown> {
 
   Widget _render(String block) {
     return _cache.putIfAbsent(block, () {
+      final t = context.lobe;
       if (_isFenceBlock(block)) {
         final lines = block.trimLeft().split('\n');
         final language = lines.first.substring(3).trim();
@@ -57,12 +67,19 @@ class _BlockedMarkdownState extends State<BlockedMarkdown> {
       return MarkdownBody(
         data: block,
         styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+          a: TextStyle(color: t.brand),
           code: TextStyle(
             fontFamily: 'monospace',
-            backgroundColor: Theme.of(context)
-                .colorScheme
-                .surfaceContainerHighest,
+            backgroundColor: t.fill,
             fontSize: 13,
+          ),
+          blockquotePadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 6,
+          ),
+          blockquoteDecoration: BoxDecoration(
+            color: t.fillSecondary,
+            border: Border(left: BorderSide(color: t.brand, width: 3)),
           ),
         ),
       );
@@ -89,12 +106,17 @@ class _CodeBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final t = context.lobe;
+    // 测试环境可能无 l10n delegates，tooltip 允许回落；snackbar 文案在回调里再取。
+    final copyTip =
+        Localizations.of<AppLocalizations>(context, AppLocalizations)?.copy ??
+        'Copy';
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
         color: dark ? const Color(0xFF0D1117) : const Color(0xFFF6F8FA),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Theme.of(context).dividerColor),
+        borderRadius: BorderRadius.circular(LobeTokens.rMd),
+        border: Border.all(color: t.fill),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -109,9 +131,10 @@ class _CodeBlock extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.copy, size: 16),
-                onPressed: () {
+              LobeActionIcon(
+                icon: Icons.copy_outlined,
+                tooltip: copyTip,
+                onTap: () {
                   Clipboard.setData(ClipboardData(text: code));
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

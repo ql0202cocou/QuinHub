@@ -5,9 +5,15 @@ import 'package:flutter/services.dart';
 import 'package:quinhub/bridge/api/message.dart';
 import 'package:quinhub/features/chat/widgets/markdown_view.dart';
 import 'package:quinhub/l10n/app_localizations.dart';
+import 'package:quinhub/theme/tokens.dart';
+import 'package:quinhub/ui/lobe_action_icon.dart';
+import 'package:quinhub/ui/lobe_avatar.dart';
+import 'package:quinhub/ui/lobe_list_tile.dart';
+import 'package:quinhub/ui/lobe_sheet.dart';
+import 'package:quinhub/ui/lobe_tag.dart';
 
-/// 消息气泡（LobeHub 风格）：assistant 左侧头像 + 全宽 Markdown + 底部操作行；
-/// user 右侧圆角气泡。长按仍有完整菜单。
+/// 消息气泡（LobeUI 风格）：assistant 左侧头像 + 全宽 Markdown + 底部操作行；
+/// user 右侧品牌蓝气泡 + 右对齐操作行。长按仍有完整菜单。
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
@@ -24,61 +30,57 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback? onEditResend;
   final VoidCallback? onDelete;
 
+  void _copy(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    Clipboard.setData(ClipboardData(text: message.text));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(l10n.copied)));
+  }
+
   void _menu(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.copy_outlined),
-              title: Text(l10n.copy),
+    showLobeSheet<void>(
+      context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LobeListTile(
+            icon: Icons.copy_outlined,
+            title: l10n.copy,
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: message.text));
+              Navigator.pop(ctx);
+            },
+          ),
+          if (onRegenerate != null)
+            LobeListTile(
+              icon: Icons.refresh,
+              title: l10n.regenerate,
               onTap: () {
-                Clipboard.setData(ClipboardData(text: message.text));
                 Navigator.pop(ctx);
+                onRegenerate!();
               },
             ),
-            if (onRegenerate != null)
-              ListTile(
-                leading: const Icon(Icons.refresh),
-                title: Text(l10n.regenerate),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onRegenerate!();
-                },
-              ),
-            if (onEditResend != null)
-              ListTile(
-                leading: const Icon(Icons.edit_outlined),
-                title: Text(l10n.editResend),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onEditResend!();
-                },
-              ),
-          ],
-        ),
+          if (onEditResend != null)
+            LobeListTile(
+              icon: Icons.edit_outlined,
+              title: l10n.editResend,
+              onTap: () {
+                Navigator.pop(ctx);
+                onEditResend!();
+              },
+            ),
+        ],
       ),
     );
   }
 
-  /// 助手头像：圆角方块 + 品牌色 robot。
+  /// 助手头像：LobeAvatar 品牌色圆角方块。
   static Widget assistantAvatar(BuildContext context, {double size = 28}) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: cs.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: Icon(
-        Icons.smart_toy_outlined,
-        size: size * 0.62,
-        color: cs.primary,
-      ),
+    return LobeAvatar(
+      icon: Icons.smart_toy_outlined,
+      color: context.lobe.brand,
+      size: size,
     );
   }
 
@@ -92,7 +94,7 @@ class MessageBubble extends StatelessWidget {
         children: [
           for (final img in message.images)
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(LobeTokens.rMd),
               child: Image.file(
                 File('$appDir/$img'),
                 width: 160,
@@ -106,31 +108,55 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _userBubble(BuildContext context, String content) {
-    final cs = Theme.of(context).colorScheme;
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Container(
-        margin: const EdgeInsets.only(left: 56),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: cs.primaryContainer,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(16),
-            topRight: Radius.circular(16),
-            bottomLeft: Radius.circular(16),
-            bottomRight: Radius.circular(4),
+  Widget _userBlock(BuildContext context, String content) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.lobe;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(left: 56),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: t.brand,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(LobeTokens.rLg),
+              topRight: Radius.circular(LobeTokens.rLg),
+              bottomLeft: Radius.circular(LobeTokens.rLg),
+              bottomRight: Radius.circular(LobeTokens.rXs),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _images(),
+              if (content.isNotEmpty)
+                Text(content, style: const TextStyle(color: Colors.white)),
+            ],
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            _images(),
-            if (content.isNotEmpty)
-              Text(content, style: TextStyle(color: cs.onPrimaryContainer)),
-          ],
-        ),
-      ),
+        if (message.text.isNotEmpty || onEditResend != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (onEditResend != null)
+                  LobeActionIcon(
+                    icon: Icons.edit_outlined,
+                    tooltip: l10n.editResend,
+                    onTap: onEditResend!,
+                  ),
+                if (message.text.isNotEmpty)
+                  LobeActionIcon(
+                    icon: Icons.copy_outlined,
+                    tooltip: l10n.copy,
+                    onTap: () => _copy(context),
+                  ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 
@@ -155,7 +181,7 @@ class MessageBubble extends StatelessWidget {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.errorContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(LobeTokens.rMd),
                   ),
                   child: Row(
                     children: [
@@ -178,12 +204,7 @@ class MessageBubble extends StatelessWidget {
                   ),
                 ),
               if (message.status == 'cancelled')
-                Text(
-                  l10n.cancelled,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.hintColor,
-                  ),
-                ),
+                Text(l10n.cancelled, style: theme.textTheme.labelSmall),
               const SizedBox(height: 2),
               _metaAndActions(context),
             ],
@@ -193,41 +214,31 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  /// 模型/tokens 元信息 + 操作行（LobeHub 风格：常驻小图标）。
+  /// 模型/tokens 元信息（LobeTag）+ 操作行（常驻小图标）。
   Widget _metaAndActions(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final meta = [
-      if (message.model != null) message.model!,
-      if (message.tokensIn != null && message.tokensOut != null)
-        'tokens ${message.tokensIn}→${message.tokensOut}',
-    ].join(' · ');
     final done = message.status == 'done';
     return Row(
       children: [
-        if (meta.isNotEmpty)
-          Expanded(
-            child: Text(
-              meta,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.hintColor,
-              ),
-            ),
-          )
-        else
-          const Spacer(),
+        Expanded(
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              if (message.model != null) LobeTag(text: message.model!),
+              if (message.tokensIn != null && message.tokensOut != null)
+                LobeTag(text: '${message.tokensIn}→${message.tokensOut} tok'),
+            ],
+          ),
+        ),
         if (done && message.text.isNotEmpty)
-          _ActionIcon(
+          LobeActionIcon(
             icon: Icons.copy_outlined,
             tooltip: l10n.copy,
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: message.text));
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text(l10n.copied)));
-            },
+            onTap: () => _copy(context),
           ),
         if (done && onRegenerate != null)
-          _ActionIcon(
+          LobeActionIcon(
             icon: Icons.refresh,
             tooltip: l10n.regenerate,
             onTap: onRegenerate!,
@@ -245,7 +256,7 @@ class MessageBubble extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: isUser
-            ? _userBubble(context, content)
+            ? _userBlock(context, content)
             : _assistantBlock(context, content),
       ),
     );
@@ -261,32 +272,5 @@ class MessageBubble extends StatelessWidget {
       if (m != null) return m.group(1)!.replaceAll(r'\"', '"');
     } catch (_) {}
     return raw;
-  }
-}
-
-class _ActionIcon extends StatelessWidget {
-  const _ActionIcon({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: Icon(icon, size: 16, color: Theme.of(context).hintColor),
-        ),
-      ),
-    );
   }
 }
