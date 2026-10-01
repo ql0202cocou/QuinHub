@@ -15,7 +15,8 @@ import 'package:quinhub/ui/lobe_sheet.dart';
 /// - assistant：首行 28px 头像 + 名称（14/500），正文通栏无气泡，
 ///   底部 12px 元信息（模型 · tokens）+ 右侧小号操作图标；
 /// - user：右对齐 fillTertiary 浅灰气泡（圆角 12、内边距 8×12），下方小号操作图标。
-/// 长按仍有完整菜单。
+/// 操作图标默认隐藏，点按消息后显示（[showActions]，由聊天页统一管理当前激活的消息）；
+/// 元信息常驻。长按仍有完整菜单。
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
     super.key,
@@ -24,6 +25,8 @@ class MessageBubble extends StatelessWidget {
     this.onRegenerate,
     this.onEditResend,
     this.onDelete,
+    this.showActions = false,
+    this.onTap,
   });
 
   final MessageDto message;
@@ -31,6 +34,14 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback? onRegenerate;
   final VoidCallback? onEditResend;
   final VoidCallback? onDelete;
+
+  /// 是否显示操作图标（复制 / 重新生成 / 编辑重发）。
+  final bool showActions;
+
+  /// 点按消息（聊天页用来切换 [showActions]）。
+  final VoidCallback? onTap;
+
+  static const _revealDuration = Duration(milliseconds: 160);
 
   void _copy(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -149,29 +160,35 @@ class MessageBubble extends StatelessWidget {
             ],
           ),
         ),
-        if (message.text.isNotEmpty || onEditResend != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (onEditResend != null)
-                  LobeActionIcon(
-                    icon: Icons.edit_outlined,
-                    tooltip: l10n.editResend,
-                    size: LobeActionIconSize.small,
-                    onTap: onEditResend!,
+        AnimatedSize(
+          duration: _revealDuration,
+          curve: Curves.easeOut,
+          alignment: Alignment.topRight,
+          child: !showActions || (message.text.isEmpty && onEditResend == null)
+              ? const SizedBox(width: double.infinity)
+              : Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (onEditResend != null)
+                        LobeActionIcon(
+                          icon: Icons.edit_outlined,
+                          tooltip: l10n.editResend,
+                          size: LobeActionIconSize.small,
+                          onTap: onEditResend!,
+                        ),
+                      if (message.text.isNotEmpty)
+                        LobeActionIcon(
+                          icon: Icons.copy_outlined,
+                          tooltip: l10n.copy,
+                          size: LobeActionIconSize.small,
+                          onTap: () => _copy(context),
+                        ),
+                    ],
                   ),
-                if (message.text.isNotEmpty)
-                  LobeActionIcon(
-                    icon: Icons.copy_outlined,
-                    tooltip: l10n.copy,
-                    size: LobeActionIconSize.small,
-                    onTap: () => _copy(context),
-                  ),
-              ],
-            ),
-          ),
+                ),
+        ),
       ],
     );
   }
@@ -222,7 +239,8 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  /// 元信息（12px textQuaternary：模型 · tokens）+ 右侧小号操作图标。
+  /// 元信息（12px textQuaternary：模型 · tokens，常驻）+ 右侧小号操作图标（点按后淡入）。
+  /// 行高固定 24，图标显隐不引起布局跳动。
   Widget _metaAndActions(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final t = context.lobe;
@@ -232,31 +250,46 @@ class MessageBubble extends StatelessWidget {
       if (message.tokensIn != null && message.tokensOut != null)
         '${message.tokensIn}→${message.tokensOut} tokens',
     ].join(' · ');
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            meta,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: t.textQuaternary),
+    return SizedBox(
+      height: 24,
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              meta,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: t.textQuaternary),
+            ),
           ),
-        ),
-        if (done && message.text.isNotEmpty)
-          LobeActionIcon(
-            icon: Icons.copy_outlined,
-            tooltip: l10n.copy,
-            size: LobeActionIconSize.small,
-            onTap: () => _copy(context),
+          AnimatedOpacity(
+            opacity: showActions ? 1 : 0,
+            duration: _revealDuration,
+            child: IgnorePointer(
+              ignoring: !showActions,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (done && message.text.isNotEmpty)
+                    LobeActionIcon(
+                      icon: Icons.copy_outlined,
+                      tooltip: l10n.copy,
+                      size: LobeActionIconSize.small,
+                      onTap: () => _copy(context),
+                    ),
+                  if (done && onRegenerate != null)
+                    LobeActionIcon(
+                      icon: Icons.refresh,
+                      tooltip: l10n.regenerate,
+                      size: LobeActionIconSize.small,
+                      onTap: onRegenerate!,
+                    ),
+                ],
+              ),
+            ),
           ),
-        if (done && onRegenerate != null)
-          LobeActionIcon(
-            icon: Icons.refresh,
-            tooltip: l10n.regenerate,
-            size: LobeActionIconSize.small,
-            onTap: onRegenerate!,
-          ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -265,6 +298,8 @@ class MessageBubble extends StatelessWidget {
     final isUser = message.role == 'user';
     final content = message.text;
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
       onLongPress: () => _menu(context),
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: isUser ? 8 : 12),

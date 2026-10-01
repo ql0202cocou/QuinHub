@@ -45,6 +45,7 @@
   - 对齐 LobeHub 移动端：assistant 首行头像 + 名称，正文通栏无气泡；user 为右对齐浅灰气泡；
   - Markdown 渲染（LobeUI chat 变体字号；代码块头部带语言名 + 复制按钮）；
   - 流式时最后一条增量渲染（block 级，见 decisions 决策三），带光标/加载指示；
+  - **点按消息**：显示该条的操作小图标（复制 / 重新生成 / 编辑重发），同一时间只激活一条；再点同一条、点列表空白处或发送新消息时收起（2026-10-01，对齐 LobeHub 移动端默认隐藏操作行）；
   - **长按消息**：复制 / 重新生成（assistant）/ 编辑重发（user）/ 删除 / 多选导出（预留）。
 - 滚动：流式输出时若用户在底部则自动跟随；上滑后暂停跟随并显示「回到底部」浮钮。
 - 输入卡片（圆角 12、细描边、轻阴影）：
@@ -70,6 +71,6 @@
 ## 5. 全局细节
 - 主题：Material 3 为底，token 按 LobeUI 定制；浅/深/跟随系统。2026-10-01 二次对齐：`app/lib/theme/tokens.dart` 的 `LobeTokens`（ThemeExtension）数值取自 @lobehub/ui 5.51.2 源码并经 LobeHub 手机网页版实测核对——**主色为中性黑白**（浅色 #222 / 暗色 #EEE，非 antd 蓝）、gray 实色文本色阶、bgLayout/Container/Elevated 三层背景、fill 四级填充、圆角 4/6/8/12、控件高 24/32/40、分层阴影、代码高亮色；`app_theme.dart` 消费 tokens 输出组件主题（去掉 Material 水波纹，按压用 fillTertiary 底）；widget 侧经 `context.lobe` 取用（未注册时按亮度回落，兼容裸 MaterialApp 测试）。字体用系统默认。参照截图见 `doc/agents/assets/2026-10-01-lobehub-ref/`。
 - UI 组件库 `app/lib/ui/`（仿 @lobehub/ui 规格、零新增依赖）：LobeGroup（平铺分组：6px 横条 + 可选小标题）、LobeListTile（设置类菜单行）、LobeListItem（头像 + 标题 + 描述 + 日期的列表项）、LobeButton（primary/fill/text/danger × small/middle/large）、LobeAvatar（emoji / 文字 / 图标三种，`.seeded` 稳定取 emoji + 底色）、LobeTag、LobeSearchBar、showLobeSheet（标题 + 关闭按钮的底部弹层）、LobeEmpty（emoji 空状态）、LobeActionIcon（small/middle/large 无边框图标按钮）。新页面/弹层优先复用这些组件。
-- 消息形态（2026-09-28 定稿，2026-10-01 对齐 LobeHub）：assistant = 首行 28px 头像 +「助手」名称、正文通栏、底部 12px 元信息（模型 · tokens）+ 右侧复制/重新生成小图标；user = 右对齐浅灰气泡（圆角 12）+ 下方编辑重发/复制小图标。
+- 消息形态（2026-09-28 定稿，2026-10-01 对齐 LobeHub）：assistant = 首行 28px 头像 +「助手」名称、正文通栏、底部 12px 元信息（模型 · tokens，常驻）+ 右侧复制/重新生成小图标（点按消息后淡入）；user = 右对齐浅灰气泡（圆角 12）+ 下方编辑重发/复制小图标（点按消息后展开）。
 - 语言：中/英，跟随系统默认。
 - Haptics：发送/停止/删除等关键操作轻触感反馈。

@@ -40,6 +40,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   final _scroll = ScrollController();
   bool _atBottom = true;
 
+  /// 当前显示操作图标的消息（点按消息切换；同一时间只激活一条）。
+  String? _activeMessageId;
+
   /// 待发送图片（已压缩落盘 files/）。
   final List<({String filePath, Uint8List bytes})> _pendingImages = [];
 
@@ -82,7 +85,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         ),
     ];
     _input.clear();
-    setState(() => _pendingImages.clear());
+    setState(() {
+      _pendingImages.clear();
+      _activeMessageId = null;
+    });
     await ref.read(chatProvider(_id).notifier).send(text, images: images);
   }
 
@@ -386,17 +392,24 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               error: (e, _) => Center(child: Text(l10n.loadFailed('$e'))),
               data: (_) {
                 final messages = chat!.messages;
-                return ListView(
-                  controller: _scroll,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                // 点按消息以外的空白处收起操作图标（消息自身的点按优先赢得手势竞争）
+                return GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _activeMessageId == null
+                      ? null
+                      : () => setState(() => _activeMessageId = null),
+                  child: ListView(
+                    controller: _scroll,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    children: [
+                      for (var i = 0; i < messages.length; i++)
+                        _bubbleFor(messages, i, chat, appDir),
+                      if (chat.streaming) _streamingBubble(chat),
+                    ],
                   ),
-                  children: [
-                    for (var i = 0; i < messages.length; i++)
-                      _bubbleFor(messages, i, chat, appDir),
-                    if (chat.streaming) _streamingBubble(chat),
-                  ],
                 );
               },
             ),
@@ -453,6 +466,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           ? () => ref.read(chatProvider(_id).notifier).regenerate()
           : null,
       onEditResend: m.role == 'user' ? () => _editResend(m) : null,
+      showActions: _activeMessageId == m.id,
+      onTap: () => setState(
+        () => _activeMessageId = _activeMessageId == m.id ? null : m.id,
+      ),
     );
   }
 

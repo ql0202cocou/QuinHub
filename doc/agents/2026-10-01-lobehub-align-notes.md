@@ -45,7 +45,13 @@
 - `fvm flutter analyze` 无问题，`fvm flutter test` 4/4 通过。
 - Android 模拟器 quinmo-api36 + mock_sse.py：首页、聊天页、设置页、外观弹层、模型选择弹层、提供商页明暗截图见 `assets/2026-10-01-lobehub-align/`。流式发送、停止按钮、发送按钮禁用/启用切换均正常。
 
+## 追加：消息操作点按显示
+
+- 操作小图标默认隐藏，点按消息显示（`MessageBubble.showActions` + `onTap`，聊天页 `_activeMessageId` 统一管理，同一时间只激活一条）；再点同一条、点列表空白处、发送新消息时收起。元信息行常驻。
+- assistant 元信息行固定高 24，图标用 `AnimatedOpacity` + `IgnorePointer` 淡入，显隐不引起布局跳动；user 操作行用 `AnimatedSize` 展开。
+- 测试：`test/message_bubble_test.dart`（默认隐藏不可点、显示后可点、user 行展开、点按回调）；模拟器实测点按 / 再点收起 / 切换消息 / 点空白收起均正常。
+
 ## 后续可补
 
-- 代码块折叠、消息操作改为「点按显示」（LobeHub 移动端默认隐藏操作行），需要时再做。
+- 代码块折叠，需要时再做。
 - LobeHub 助手头像为 Fluent 3D emoji 图片，当前用系统 emoji 字体代替。
