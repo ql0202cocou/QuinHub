@@ -204,6 +204,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get copiedCode => 'Code copied';
 
   @override
+  String get selectText => 'Select text';
+
+  @override
   String get regenerate => 'Regenerate';
 
   @override

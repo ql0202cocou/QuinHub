@@ -55,6 +55,24 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (!_scroll.hasClients) return;
       _atBottom =
           _scroll.position.pixels >= _scroll.position.maxScrollExtent - 48;
+      if (_scroll.position.pixels <= 48) _loadMore();
+    });
+  }
+
+  /// 滚动接近顶部时向前翻页；翻页后保持视口停在原消息上（按 extent 增量补偿）。
+  Future<void> _loadMore() async {
+    final chat = ref.read(chatProvider(_id)).valueOrNull;
+    if (chat == null || !chat.hasMore || chat.loadingMore || chat.streaming) {
+      return;
+    }
+    final prevExtent = _scroll.position.maxScrollExtent;
+    final prevPixels = _scroll.position.pixels;
+    await ref.read(chatProvider(_id).notifier).loadMore();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scroll.hasClients) {
+        final delta = _scroll.position.maxScrollExtent - prevExtent;
+        if (delta > 0) _scroll.jumpTo(prevPixels + delta);
+      }
     });
   }
 
@@ -405,6 +423,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       vertical: 8,
                     ),
                     children: [
+                      if (chat.loadingMore)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Center(
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        ),
                       for (var i = 0; i < messages.length; i++)
                         _bubbleFor(messages, i, chat, appDir),
                       if (chat.streaming) _streamingBubble(chat),
@@ -631,21 +660,28 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     return Semantics(
       button: true,
       label: streaming ? l10n.cancel : l10n.send,
-      child: Material(
-        color: active ? t.primary : t.fillTertiary,
-        borderRadius: BorderRadius.circular(LobeTokens.r),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
+        decoration: BoxDecoration(
+          color: active ? t.primary : t.fillTertiary,
+          borderRadius: BorderRadius.circular(LobeTokens.r),
+        ),
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: streaming
-              ? () => ref.read(chatProvider(_id).notifier).cancel()
-              : (canSend ? _send : null),
-          child: SizedBox(
-            width: 32,
-            height: 32,
-            child: Icon(
-              streaming ? Icons.stop_rounded : Icons.send_rounded,
-              size: 16,
-              color: active ? t.onPrimary : t.textQuaternary,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: streaming
+                ? () => ref.read(chatProvider(_id).notifier).cancel()
+                : (canSend ? _send : null),
+            child: SizedBox(
+              width: 32,
+              height: 32,
+              child: Icon(
+                streaming ? Icons.stop_rounded : Icons.send_rounded,
+                size: 16,
+                color: active ? t.onPrimary : t.textQuaternary,
+              ),
             ),
           ),
         ),

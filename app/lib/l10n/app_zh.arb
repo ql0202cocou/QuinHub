@@ -66,6 +66,7 @@
   "copy": "复制",
   "copied": "已复制",
   "copiedCode": "已复制代码",
+  "selectText": "选择文本",
   "regenerate": "重新生成",
   "editResend": "编辑并重发",
   "cancelled": "已取消",

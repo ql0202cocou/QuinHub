@@ -59,6 +59,7 @@
   "copy": "Copy",
   "copied": "Copied",
   "copiedCode": "Code copied",
+  "selectText": "Select text",
   "regenerate": "Regenerate",
   "editResend": "Edit & resend",
   "cancelled": "Cancelled",

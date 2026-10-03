@@ -459,6 +459,33 @@ impl Storage {
         Ok(rows)
     }
 
+    /// 分页拉取会话消息：取 before 游标之前（更早）的 limit 条，返回正序；
+    /// before 为 None 时取最新一页。游标为 (created_at, rowid)，与排序键一致，同毫秒不漏不重。
+    pub async fn list_messages_page(
+        &self,
+        conversation_id: &str,
+        before: Option<(i64, i64)>,
+        limit: i64,
+    ) -> Result<Vec<Message>, StorageError> {
+        let (bc, br) = before.unwrap_or((i64::MAX, i64::MAX));
+        let mut rows = sqlx::query_as::<_, Message>(
+            "SELECT rowid, * FROM message
+             WHERE conversation_id = ? AND deleted_at IS NULL
+               AND (created_at < ? OR (created_at = ? AND rowid < ?))
+             ORDER BY created_at DESC, rowid DESC
+             LIMIT ?",
+        )
+        .bind(conversation_id)
+        .bind(bc)
+        .bind(bc)
+        .bind(br)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await?;
+        rows.reverse();
+        Ok(rows)
+    }
+
     pub async fn get_message(&self, id: &str) -> Result<Message, StorageError> {
         sqlx::query_as::<_, Message>("SELECT * FROM message WHERE id = ? AND deleted_at IS NULL")
             .bind(id)
@@ -570,6 +597,52 @@ mod conv_tests {
         s.delete_conversation(&c2.id).await.unwrap();
         assert_eq!(s.list_conversations().await.unwrap().len(), 1);
         assert!(s.get_conversation(&c2.id).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn message_pagination() {
+        let (s, cid) = setup().await;
+        // 快速连插，created_at 可能同毫秒，正好验证 rowid 决胜
+        let mut ids = vec![];
+        for i in 0..5 {
+            let m = s
+                .insert_message(&cid, "user", &format!("m{i}"), None, "done")
+                .await
+                .unwrap();
+            ids.push(m.id);
+        }
+
+        // 最新一页（正序返回）
+        let p1 = s.list_messages_page(&cid, None, 2).await.unwrap();
+        assert_eq!(p1.len(), 2);
+        assert_eq!(p1[0].id, ids[3]);
+        assert_eq!(p1[1].id, ids[4]);
+        assert!(p1[0].rowid > 0);
+
+        // 游标往前翻：不漏不重
+        let cur = |m: &Message| (m.created_at, m.rowid);
+        let p2 = s
+            .list_messages_page(&cid, Some(cur(&p1[0])), 2)
+            .await
+            .unwrap();
+        assert_eq!(p2.len(), 2);
+        assert_eq!(p2[0].id, ids[1]);
+        assert_eq!(p2[1].id, ids[2]);
+
+        // 最后一页不足 limit
+        let p3 = s
+            .list_messages_page(&cid, Some(cur(&p2[0])), 2)
+            .await
+            .unwrap();
+        assert_eq!(p3.len(), 1);
+        assert_eq!(p3[0].id, ids[0]);
+
+        // 到头为空
+        let p4 = s
+            .list_messages_page(&cid, Some(cur(&p3[0])), 2)
+            .await
+            .unwrap();
+        assert!(p4.is_empty());
     }
 
     #[tokio::test]

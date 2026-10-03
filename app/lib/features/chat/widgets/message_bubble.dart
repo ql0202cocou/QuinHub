@@ -10,6 +10,7 @@ import 'package:quinhub/ui/lobe_action_icon.dart';
 import 'package:quinhub/ui/lobe_avatar.dart';
 import 'package:quinhub/ui/lobe_list_tile.dart';
 import 'package:quinhub/ui/lobe_sheet.dart';
+import 'package:share_plus/share_plus.dart';
 
 /// 消息块（对齐 LobeHub 移动端实测）：
 /// - assistant：首行 28px 头像 + 名称（14/500），正文通栏无气泡，
@@ -65,6 +66,19 @@ class MessageBubble extends StatelessWidget {
               Navigator.pop(ctx);
             },
           ),
+          if (message.text.isNotEmpty)
+            LobeListTile(
+              icon: Icons.text_fields,
+              title: l10n.selectText,
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => _SelectTextPage(text: message.text),
+                  ),
+                );
+              },
+            ),
           if (onRegenerate != null)
             LobeListTile(
               icon: Icons.refresh,
@@ -111,7 +125,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _images() {
+  Widget _images(BuildContext context) {
     if (message.images.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -120,14 +134,27 @@ class MessageBubble extends StatelessWidget {
         runSpacing: 8,
         children: [
           for (final img in message.images)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(LobeTokens.r),
-              child: Image.file(
-                File('$appDir/$img'),
-                width: 160,
-                height: 160,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
+            GestureDetector(
+              onTap: () => Navigator.of(context).push(
+                PageRouteBuilder<void>(
+                  pageBuilder: (_, _, _) =>
+                      _ImageViewerPage(path: '$appDir/$img'),
+                  transitionsBuilder: (_, anim, _, child) =>
+                      FadeTransition(opacity: anim, child: child),
+                ),
+              ),
+              child: Hero(
+                tag: '$appDir/$img',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(LobeTokens.r),
+                  child: Image.file(
+                    File('$appDir/$img'),
+                    width: 160,
+                    height: 160,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
+                  ),
+                ),
               ),
             ),
         ],
@@ -151,7 +178,7 @@ class MessageBubble extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _images(),
+              _images(context),
               if (content.isNotEmpty)
                 Text(
                   content,
@@ -201,7 +228,7 @@ class MessageBubble extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         assistantHeader(context),
-        _images(),
+        _images(context),
         if (content.isNotEmpty) BlockedMarkdown(text: content),
         if (errorText != null)
           Container(
@@ -320,5 +347,74 @@ class MessageBubble extends StatelessWidget {
       if (m != null) return m.group(1)!.replaceAll(r'\"', '"');
     } catch (_) {}
     return raw;
+  }
+}
+
+/// 选择文本页：全屏展示消息原文（Markdown 源码），可拖选复制。
+/// 渲染态 selectable 见 decisions.md 决策三备注（flutter_markdown selectable 断言 bug），
+/// 故用独立页面 + SelectableText 替代。
+class _SelectTextPage extends StatelessWidget {
+  const _SelectTextPage({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.lobe;
+    return Scaffold(
+      appBar: AppBar(title: Text(AppLocalizations.of(context).selectText)),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: SizedBox(
+          width: double.infinity,
+          child: SelectableText(
+            text,
+            style: TextStyle(fontSize: 14, height: 1.6, color: t.text),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 图片大图预览：黑底全屏，双指缩放（InteractiveViewer），可分享原图。
+class _ImageViewerPage extends StatelessWidget {
+  const _ImageViewerPage({required this.path});
+
+  /// 图片绝对路径。
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            onPressed: () =>
+                SharePlus.instance.share(ShareParams(files: [XFile(path)])),
+          ),
+        ],
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          maxScale: 5,
+          child: Hero(
+            tag: path,
+            child: Image.file(
+              File(path),
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.broken_image,
+                color: Colors.white54,
+                size: 48,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

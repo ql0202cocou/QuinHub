@@ -452,6 +452,12 @@ abstract class AppLocalizations {
   /// **'已复制代码'**
   String get copiedCode;
 
+  /// No description provided for @selectText.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择文本'**
+  String get selectText;
+
   /// No description provided for @regenerate.
   ///
   /// In zh, this message translates to:

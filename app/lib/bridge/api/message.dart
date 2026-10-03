@@ -16,6 +16,19 @@ Future<List<MessageDto>> messageList({required String conversationId}) =>
       conversationId: conversationId,
     );
 
+/// 分页拉取：before 游标（created_at, rowid）之前的一页；None 取最新一页。
+Future<List<MessageDto>> messageListPage({
+  required String conversationId,
+  PlatformInt64? beforeCreatedAt,
+  PlatformInt64? beforeRowid,
+  required int limit,
+}) => RustLib.instance.api.crateApiMessageMessageListPage(
+  conversationId: conversationId,
+  beforeCreatedAt: beforeCreatedAt,
+  beforeRowid: beforeRowid,
+  limit: limit,
+);
+
 Future<void> messageDelete({required String id}) =>
     RustLib.instance.api.crateApiMessageMessageDelete(id: id);
 
@@ -35,6 +48,9 @@ class MessageDto {
   final PlatformInt64? tokensOut;
   final PlatformInt64 createdAt;
 
+  /// SQLite 行号，分页游标用（与 created_at 组成 (created_at, rowid)）。
+  final PlatformInt64 rowid;
+
   const MessageDto({
     required this.id,
     required this.role,
@@ -46,6 +62,7 @@ class MessageDto {
     this.tokensIn,
     this.tokensOut,
     required this.createdAt,
+    required this.rowid,
   });
 
   @override
@@ -59,7 +76,8 @@ class MessageDto {
       error.hashCode ^
       tokensIn.hashCode ^
       tokensOut.hashCode ^
-      createdAt.hashCode;
+      createdAt.hashCode ^
+      rowid.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -75,5 +93,6 @@ class MessageDto {
           error == other.error &&
           tokensIn == other.tokensIn &&
           tokensOut == other.tokensOut &&
-          createdAt == other.createdAt;
+          createdAt == other.createdAt &&
+          rowid == other.rowid;
 }

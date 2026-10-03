@@ -28,6 +28,8 @@ pub struct MessageDto {
     pub tokens_in: Option<i64>,
     pub tokens_out: Option<i64>,
     pub created_at: i64,
+    /// SQLite 行号，分页游标用（与 created_at 组成 (created_at, rowid)）。
+    pub rowid: i64,
 }
 
 /// 解析 content JSON parts；旧数据为纯文本时原样返回（向后兼容）。
@@ -75,6 +77,7 @@ fn to_dto(m: Message) -> MessageDto {
         tokens_in: m.tokens_in,
         tokens_out: m.tokens_out,
         created_at: m.created_at,
+        rowid: m.rowid,
     }
 }
 
@@ -84,6 +87,23 @@ pub async fn message_list(conversation_id: String) -> Result<Vec<MessageDto>, Br
         .list_messages(&conversation_id)
         .await
         .context("list messages")
+        .map_err(clean)?;
+    Ok(rows.into_iter().map(to_dto).collect())
+}
+
+/// 分页拉取：before 游标（created_at, rowid）之前的一页；None 取最新一页。
+pub async fn message_list_page(
+    conversation_id: String,
+    before_created_at: Option<i64>,
+    before_rowid: Option<i64>,
+    limit: u32,
+) -> Result<Vec<MessageDto>, BridgeError> {
+    let before = before_created_at.zip(before_rowid);
+    let rows = storage()
+        .map_err(clean)?
+        .list_messages_page(&conversation_id, before, limit as i64)
+        .await
+        .context("list messages page")
         .map_err(clean)?;
     Ok(rows.into_iter().map(to_dto).collect())
 }

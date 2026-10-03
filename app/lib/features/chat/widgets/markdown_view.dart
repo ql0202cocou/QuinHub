@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_highlight/flutter_highlight.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:markdown/markdown.dart' as md;
 import 'package:quinhub/l10n/app_localizations.dart';
 import 'package:quinhub/theme/tokens.dart';
 import 'package:quinhub/ui/lobe_action_icon.dart';
 
 /// Blocked 增量 Markdown（decisions.md 决策三）：
-/// 文本按 block 切分（代码块感知），相同内容的 block 复用同一 widget 实例，
+/// 文本按 block 切分（代码块 / $$ 数学块感知），相同内容的 block 复用同一 widget 实例，
 /// 流式到达时只有最后一个未完成 block 重解析，避免整段重渲染闪烁。
 ///
 /// 代码块不走 flutter_markdown 的 pre builder（会触发 _inlines.isEmpty 断言，
 /// M4 实测），整块由我们自己渲染（高亮 + 复制）。
+/// LaTeX：$$ 块级公式整块用 flutter_math_fork 渲染；$ 行内公式走自定义
+/// inlineSyntax + builder（decisions.md 决策五）。
 class BlockedMarkdown extends StatefulWidget {
   const BlockedMarkdown({super.key, required this.text});
 
@@ -35,11 +39,17 @@ class _BlockedMarkdownState extends State<BlockedMarkdown> {
     final blocks = <String>[];
     final buf = StringBuffer();
     var inFence = false;
+    var inMath = false;
     for (final line in text.split('\n')) {
-      if (line.trimLeft().startsWith('```')) inFence = !inFence;
+      final t = line.trimLeft();
+      if (t.startsWith('```')) {
+        inFence = !inFence;
+      } else if (!inFence && t.startsWith(r'$$')) {
+        inMath = !inMath;
+      }
       buf.write(line);
       buf.write('\n');
-      if (!inFence && line.trim().isEmpty) {
+      if (!inFence && !inMath && line.trim().isEmpty) {
         blocks.add(buf.toString());
         buf.clear();
       }
@@ -49,6 +59,9 @@ class _BlockedMarkdownState extends State<BlockedMarkdown> {
   }
 
   bool _isFenceBlock(String block) => block.trimLeft().startsWith('```');
+
+  bool _isMathBlock(String block) =>
+      !_isFenceBlock(block) && block.trimLeft().startsWith(r'$$');
 
   Widget _render(String block) {
     return _cache.putIfAbsent(block, () {
@@ -62,6 +75,16 @@ class _BlockedMarkdownState extends State<BlockedMarkdown> {
             .join('\n');
         return _CodeBlock(code: code, language: language);
       }
+      if (_isMathBlock(block)) {
+        final expr = block
+            .trimLeft()
+            .split('\n')
+            .skip(1)
+            .takeWhile((l) => !l.trimLeft().startsWith(r'$$'))
+            .join('\n')
+            .trim();
+        return _MathBlock(expr: expr);
+      }
       // LobeUI Markdown variant="chat"：14px / 行高 1.6，标题倍率 0.25，段距 0.5em
       final base = TextStyle(fontSize: 14, height: 1.6, color: t.text);
       TextStyle h(double scale) => base.copyWith(
@@ -71,6 +94,8 @@ class _BlockedMarkdownState extends State<BlockedMarkdown> {
       );
       return MarkdownBody(
         data: block,
+        inlineSyntaxes: [_InlineLatexSyntax()],
+        builders: {'math': _InlineLatexBuilder()},
         styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
           p: base,
           h1: h(1.375),
@@ -214,6 +239,7 @@ class _CodeBlockState extends State<_CodeBlock> {
                   AnimatedRotation(
                     turns: _collapsed ? -0.25 : 0,
                     duration: const Duration(milliseconds: 160),
+                    curve: Curves.easeOut,
                     child: Icon(
                       Icons.keyboard_arrow_down,
                       size: 16,
@@ -269,6 +295,69 @@ class _CodeBlockState extends State<_CodeBlock> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// $$ 块级公式：整行横向可滚动，解析失败回落为原文文本。
+class _MathBlock extends StatelessWidget {
+  const _MathBlock({required this.expr});
+
+  final String expr;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.lobe;
+    final style = TextStyle(fontSize: 14, color: t.text);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: SizedBox(
+        width: double.infinity,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Math.tex(
+            expr,
+            mathStyle: MathStyle.display,
+            textStyle: style,
+            onErrorFallback: (_) => Text(expr, style: style),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// $ 行内公式语法。要求首尾非空白，避免把 "$5 和 $6" 这类货币写法误判为公式。
+class _InlineLatexSyntax extends md.InlineSyntax {
+  _InlineLatexSyntax()
+    : super(
+        r'\$([^\s$][^$\n]*?[^\s$]|[^\s$])\$',
+        startCharacter: r'$'.codeUnitAt(0),
+      );
+
+  @override
+  bool onMatch(md.InlineParser parser, Match match) {
+    parser.addNode(md.Element.text('math', match[1]!));
+    return true;
+  }
+}
+
+/// 行内公式 builder：以 WidgetSpan 嵌入段落，解析失败回落为原文。
+class _InlineLatexBuilder extends MarkdownElementBuilder {
+  @override
+  Widget? visitElementAfterWithContext(
+    BuildContext context,
+    md.Element element,
+    TextStyle? preferredStyle,
+    TextStyle? parentStyle,
+  ) {
+    final style = (parentStyle ?? const TextStyle()).copyWith(fontSize: 13);
+    final expr = element.textContent;
+    return Math.tex(
+      expr,
+      mathStyle: MathStyle.text,
+      textStyle: style,
+      onErrorFallback: (_) => Text('\$$expr\$', style: style),
     );
   }
 }

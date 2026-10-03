@@ -13,6 +13,7 @@ MessageDto _msg(String role) => MessageDto(
   model: 'mock-1',
   status: 'done',
   createdAt: 0,
+  rowid: 1,
 );
 
 Widget _wrap(Widget child) => MaterialApp(
@@ -97,6 +98,35 @@ void main() {
       );
       await tester.tap(find.text('hello'));
       expect(taps, 1);
+    });
+
+    testWidgets('长按菜单进选择文本页', (tester) async {
+      await tester.pumpWidget(
+        _wrap(MessageBubble(message: _msg('assistant'), appDir: '')),
+      );
+      await tester.longPress(find.text('hello'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Select text'));
+      await tester.pumpAndSettle();
+      expect(find.byType(SelectableText), findsOneWidget);
+    });
+
+    testWidgets('点图片缩略图进大图预览', (tester) async {
+      final m = MessageDto(
+        id: 'm1',
+        role: 'user',
+        text: '',
+        images: const ['files/x.jpg'],
+        model: null,
+        status: 'done',
+        createdAt: 0,
+        rowid: 1,
+      );
+      await tester.pumpWidget(_wrap(MessageBubble(message: m, appDir: '')));
+      await tester.tap(find.byType(Image).first, warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(find.byType(InteractiveViewer), findsOneWidget);
+      expect(find.byIcon(Icons.share_outlined), findsOneWidget);
     });
   });
 }

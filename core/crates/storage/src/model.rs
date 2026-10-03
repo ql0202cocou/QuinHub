@@ -49,6 +49,9 @@ pub struct Conversation {
 
 #[derive(Debug, Clone, FromRow)]
 pub struct Message {
+    /// SQLite 内部行号；仅分页查询显式 SELECT 时有值，其余为 0。
+    #[sqlx(default)]
+    pub rowid: i64,
     pub id: String,
     pub conversation_id: String,
     pub parent_id: Option<String>,

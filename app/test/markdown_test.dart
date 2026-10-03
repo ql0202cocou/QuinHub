@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:quinhub/features/chat/widgets/markdown_view.dart';
 
 const reply = '''好的，这是来自 mock 的流式回复。
@@ -78,10 +79,44 @@ void main() {
     expect(code, findsNothing);
 
     // 模拟流式：代码块之后继续到达新段落
-    await tester.pumpWidget(md('${head}后续内容'));
+    await tester.pumpWidget(md('$head后续内容'));
     await tester.pumpAndSettle();
     expect(find.textContaining('后续内容'), findsOneWidget);
     expect(code, findsNothing);
+  });
+
+  testWidgets(r'F: $$ 块级公式渲染为 Math', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: BlockedMarkdown(text: '前言\n\n\$\$\nE=mc^2\n\$\$\n\n后续'),
+        ),
+      ),
+    );
+    expect(find.byType(Math), findsOneWidget);
+    expect(find.textContaining('后续'), findsOneWidget);
+  });
+
+  testWidgets(r'G: $ 行内公式渲染；货币写法不误判', (tester) async {
+    Widget md(String text) => MaterialApp(
+      home: Scaffold(body: BlockedMarkdown(text: text)),
+    );
+    await tester.pumpWidget(md(r'质能方程 $E=mc^2$ 很有名'));
+    expect(find.byType(Math), findsOneWidget);
+
+    // "$5 和 $6" 首尾有空白/是货币，不应渲染为公式
+    await tester.pumpWidget(md(r'价格 $5 和 $6 元'));
+    expect(find.byType(Math), findsNothing);
+    expect(find.textContaining('价格'), findsWidgets);
+  });
+
+  testWidgets(r'H: 流式中未闭合 $$ 不崩溃', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: BlockedMarkdown(text: '前言\n\n\$\$\nE=mc')),
+      ),
+    );
+    expect(find.byType(Math), findsOneWidget);
   });
 }
 

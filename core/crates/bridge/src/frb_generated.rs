@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -615285797;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 772182160;
 
 // Section: executor
 
@@ -740,6 +740,51 @@ fn wire__crate__api__message__message_list_impl(
         },
     )
 }
+fn wire__crate__api__message__message_list_page_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "message_list_page",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_conversation_id = <String>::sse_decode(&mut deserializer);
+            let api_before_created_at = <Option<i64>>::sse_decode(&mut deserializer);
+            let api_before_rowid = <Option<i64>>::sse_decode(&mut deserializer);
+            let api_limit = <u32>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, crate::api::BridgeError>(
+                    (move || async move {
+                        let output_ok = crate::api::message::message_list_page(
+                            api_conversation_id,
+                            api_before_created_at,
+                            api_before_rowid,
+                            api_limit,
+                        )
+                        .await?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__profile__model_supports_vision_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -1314,6 +1359,7 @@ impl SseDecode for crate::api::message::MessageDto {
         let mut var_tokensIn = <Option<i64>>::sse_decode(deserializer);
         let mut var_tokensOut = <Option<i64>>::sse_decode(deserializer);
         let mut var_createdAt = <i64>::sse_decode(deserializer);
+        let mut var_rowid = <i64>::sse_decode(deserializer);
         return crate::api::message::MessageDto {
             id: var_id,
             role: var_role,
@@ -1325,6 +1371,7 @@ impl SseDecode for crate::api::message::MessageDto {
             tokens_in: var_tokensIn,
             tokens_out: var_tokensOut,
             created_at: var_createdAt,
+            rowid: var_rowid,
         };
     }
 }
@@ -1381,6 +1428,13 @@ impl SseDecode for crate::api::profile::ProfileDto {
             enabled_models: var_enabledModels,
             created_at: var_createdAt,
         };
+    }
+}
+
+impl SseDecode for u32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u32::<NativeEndian>().unwrap()
     }
 }
 
@@ -1473,17 +1527,18 @@ fn pde_ffi_dispatcher_primary_impl(
         15 => wire__crate__api__lifecycle__init_core_impl(port, ptr, rust_vec_len, data_len),
         16 => wire__crate__api__message__message_delete_impl(port, ptr, rust_vec_len, data_len),
         17 => wire__crate__api__message__message_list_impl(port, ptr, rust_vec_len, data_len),
-        18 => {
+        18 => wire__crate__api__message__message_list_page_impl(port, ptr, rust_vec_len, data_len),
+        19 => {
             wire__crate__api__profile__model_supports_vision_impl(port, ptr, rust_vec_len, data_len)
         }
-        19 => wire__crate__api__profile__profile_create_impl(port, ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__profile__profile_delete_impl(port, ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__profile__profile_get_impl(port, ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__profile__profile_list_impl(port, ptr, rust_vec_len, data_len),
-        23 => wire__crate__api__profile__profile_test_impl(port, ptr, rust_vec_len, data_len),
-        24 => wire__crate__api__profile__profile_update_impl(port, ptr, rust_vec_len, data_len),
-        25 => wire__crate__api__settings__settings_get_impl(port, ptr, rust_vec_len, data_len),
-        26 => wire__crate__api__settings__settings_set_impl(port, ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__profile__profile_create_impl(port, ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__profile__profile_delete_impl(port, ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__profile__profile_get_impl(port, ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__profile__profile_list_impl(port, ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__profile__profile_test_impl(port, ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__profile__profile_update_impl(port, ptr, rust_vec_len, data_len),
+        26 => wire__crate__api__settings__settings_get_impl(port, ptr, rust_vec_len, data_len),
+        27 => wire__crate__api__settings__settings_set_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1614,6 +1669,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::message::MessageDto {
             self.tokens_in.into_into_dart().into_dart(),
             self.tokens_out.into_into_dart().into_dart(),
             self.created_at.into_into_dart().into_dart(),
+            self.rowid.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1835,6 +1891,7 @@ impl SseEncode for crate::api::message::MessageDto {
         <Option<i64>>::sse_encode(self.tokens_in, serializer);
         <Option<i64>>::sse_encode(self.tokens_out, serializer);
         <i64>::sse_encode(self.created_at, serializer);
+        <i64>::sse_encode(self.rowid, serializer);
     }
 }
 
@@ -1878,6 +1935,13 @@ impl SseEncode for crate::api::profile::ProfileDto {
         <bool>::sse_encode(self.is_default, serializer);
         <Vec<String>>::sse_encode(self.enabled_models, serializer);
         <i64>::sse_encode(self.created_at, serializer);
+    }
+}
+
+impl SseEncode for u32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_u32::<NativeEndian>(self).unwrap();
     }
 }
 

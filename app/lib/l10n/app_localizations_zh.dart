@@ -201,6 +201,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get copiedCode => '已复制代码';
 
   @override
+  String get selectText => '选择文本';
+
+  @override
   String get regenerate => '重新生成';
 
   @override
