@@ -127,7 +127,7 @@ QuinHub/
    - 多会话：新建/重命名/置顶/归档/删除，本地持久化，杀进程恢复。✅（归档入口 2026-09-28 补齐：长按菜单归档 + 设置 → 已归档会话页）
    - 会话级模型切换与参数（temperature、top_p、max_tokens、system prompt）。✅（参数弹层 2026-09-28 补齐：聊天页更多菜单 → 会话参数）
    - **图片消息**：拍照/相册选图、压缩、base64 发送（OpenAI `image_url` 与 Anthropic `source` 两种格式适配）；仅对 capabilities 含 vision 的模型开放入口。✅（vision gating 2026-09-28 补齐：Rust 侧 `model_supports_vision` 启发式，非视觉模型禁用图片按钮）
-   - Markdown 渲染：代码高亮 + 一键复制、表格、列表；LaTeX 留接口。✅（LaTeX 未做）
+   - Markdown 渲染：代码高亮 + 一键复制、表格、列表；LaTeX（$$ 块级 + 行内 $，2026-10-03 落地，decisions 决策五）。✅
    - Token 用量展示（取响应 usage）。✅（消息级 + 会话级统计对话框）
    - **上下文管理（Agent 化）**：历史全量存储不丢弃；ContextManager 负责发送时的上下文组装，默认策略 `auto_summary`（接近模型窗口时自动滚动摘要旧消息）；见 decisions.md 决策四。✅（⚠️ 未用超长真实对话实测触发——backlog 验证项）
 3. **导出与分享**：会话导出 Markdown 文件；分享长图（滚动截屏渲染）；均走系统分享面板。✅（长图实为离屏 RepaintBoundary 渲染）

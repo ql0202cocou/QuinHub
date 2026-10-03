@@ -41,10 +41,10 @@ QuinHub 第一期「对话核心」已完成并真机（Android 模拟器）实�
 10. 崩溃收集决策（默认不接；接则在隐私政策声明）。
 
 ### P3 — 体验提升（非承诺项）
-11. LaTeX 渲染（接口已留；gpt_markdown 自带或加 flutter_math_fork）。
-12. 消息分页加载（目前全量；千条以上再议）。
-13. 消息可选中复制（flutter_markdown selectable 有断言 bug，长按复制整段替代；治本要换库或升级后重试）。
-14. 消息分支 UI（parent_id 已留）、图片大图预览、流式时逐消息 tokens 实时显示。
+11. ~~LaTeX 渲染~~ ✅（2026-10-03）：flutter_math_fork；`$$` 块级整块渲染 + 行内 `$...$` WidgetSpan 内嵌，货币写法防误判，解析失败回落原文（decisions 决策五）。
+12. ~~消息分页加载~~ ✅（2026-10-03）：初始 50 条，滚动近顶部自动翻页 + 视口补偿；storage `list_messages_page`（created_at, rowid 游标，同毫秒不漏不重）+ bridge `message_list_page`。
+13. ~~消息可选中复制~~ ✅（2026-10-03）：长按菜单「选择文本」→ 全屏 SelectableText 原文拖选（渲染态 selectable 与点按手势冲突，决策五）。
+14. 消息分支 UI（parent_id 已留）未做；~~图片大图预览~~ ✅（2026-10-03：黑底全屏 + 双指缩放 + 分享原图）；流式时逐消息 tokens 实时显示未做。
 
 ## 新接手者 30 分钟上手路径
 

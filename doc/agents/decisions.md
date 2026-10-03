@@ -19,6 +19,7 @@
 | 图片消息 | 第一期纳入（M4 后半）；仅 vision 模型开放入口 |
 | 导出/分享 | 导出 Markdown 文件 + 分享长图（M5） |
 | 上下文管理 | 历史全量存储；Agent 化 ContextManager（默认 auto_summary，见决策四） |
+| LaTeX / 文本选择 | flutter_math_fork（$$ 块 + 行内 $）；渲染态不可选，长按菜单进选择文本页（见决策五） |
 
 ## 决策一：Rust / Dart 分工边界
 
@@ -96,6 +97,21 @@
 ### 待细化（M3 设计时定稿）
 - 「Agent 模式」的更复杂形态（自动话题切分、按需召回旧消息、跨会话记忆）本期不实现，接口预留。
 - token 估算方案：第一期用字符近似（≈4 字符/token）或 tiktoken 离线词表，M3 定。
+
+## 决策五：LaTeX 渲染与消息文本选择（2026-10-03，P3 收敛）
+
+结论：**LaTeX 用 flutter_math_fork；消息「可选中复制」走长按菜单 → 全屏选择文本页，不在渲染态启用 selectable。**
+
+### LaTeX（backlog #11）
+- 选型：flutter_math_fork（KaTeX 移植，纯 Dart 渲染、无需 webview）。**新增依赖理由**：gpt_markdown 虽自带 LaTeX，但决策三已定稿 flutter_markdown + 自研 block 层，换库要重写流式渲染与样式体系，代价远大于加一个渲染库。
+- 实现：`$$` 块级公式在 block 切分层整体拦截（与代码块同机制），整块 `Math.tex` 渲染，横向可滚动；行内 `$...$` 走 markdown 包自定义 `InlineSyntax` + flutter_markdown `builders` 的 `visitElementAfterWithContext`，以 WidgetSpan 嵌入段落。
+- 防误判：行内语法要求公式首尾非空白，`$5 和 $6` 这类货币写法不触发；解析失败一律回落为原文文本。
+- 行内 builder 的注意点（实测）：flutter_markdown 0.7.7 的 `visitText` 按**外层 block tag** 派发，行内自定义 tag 只有 `visitElementAfterWithContext` 会命中。
+
+### 可选中复制（backlog #13）
+- 背景：决策三备注的 flutter_markdown `selectable: true` 断言 bug 在 0.7.7 仍存在风险；且 SelectionArea 的长按拖选会与消息气泡的点按/长按手势冲突（点文本无法唤起操作图标）。
+- 方案：长按菜单加「选择文本」→ 全屏页 `SelectableText` 展示消息原文（Markdown 源码），系统级拖选复制。渲染态保持不可选，交互零冲突。
+- 若未来要在渲染态直接拖选，需先解决手势冲突再重试 SelectionArea（届时更新本条目）。
 
 ## 其他已确认
 - 只做 iOS + Android 客户端，不考虑桌面端。
